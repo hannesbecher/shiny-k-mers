@@ -40,6 +40,7 @@ tet.ui <- fluidPage(titlePanel("Tetmer"),
                     fluidRow(
                       column(3,
                              wellPanel(h4("1st: Select fitting mode and model"),
+                                       checkboxInput("showData", "Show data", value = TRUE),
                                        radioButtons("fitmod", "Fitting mode",
                                                     c("Manual" = "man",
                                                       "Autofit" = "auto")
@@ -119,7 +120,12 @@ tet.server <- function(input, output) {
     
     
     # read spectrum
-    counts <- read.table(specPath, skip=6, col.names = c("Muliplicity","Count"))
+    #counts <- read.table(specPath, skip=xxx, col.names = c("Muliplicity","Count")) # skip "xxx" lines
+    counts <- read.table(specPath, col.names = c("Muliplicity","Count"))
+    # cut off first row if 0-based spectrum
+    if(counts[1,1] == 0) {
+      counts <- counts[2:nrow(counts),]
+    }
     
     probsDip <- expression(rbind(
       dnbinom(txmin:txmax, tkcov/tbias*1, mu = tkcov * 1),
@@ -173,9 +179,16 @@ tet.server <- function(input, output) {
     if(input$fitmod=="man"){
       
       # plot spectrum
-      plot(counts[,1],counts[,2], xlim=c(0,input$txmax), ylim=c(0, input$tymax*1000),
+      if(input$showData){
+        plot(counts[,1],counts[,2], xlim=c(0,input$txmax), ylim=c(0, input$tymax*1000),
            xlab="K-mer multiplicity (coverage)", ylab="K-mer count", main = specPath)
+      } else {
+        plot(counts[,1],counts[,2], xlim=c(0,input$txmax), ylim=c(0, input$tymax*1000),
+             xlab="K-mer multiplicity (coverage)", ylab="K-mer count", main = specPath, type = 'n')
+      }
       legend("topleft", col=c(1,2), lwd=2, lty=c(0,2), pch=c(1,NA), legend=c("Data","Fit"))
+      
+      
       
       if(input$mod =="d") {
         abline(v=c(1,2)*input$tkcov, lty=2,col="grey")
@@ -192,7 +205,7 @@ tet.server <- function(input, output) {
       
       if(input$mod=="d"){
         points(
-          colSums(eval(probsDip, envir = list(txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
+          colSums(eval(probsDip, envir = list(txmin= 1, txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
                     eval(factorDip, envir=list(tth=input$tth)))*input$tyadj*1000000,
           col="red", type = 'l', lty=1, lwd=2
         )
@@ -207,7 +220,7 @@ tet.server <- function(input, output) {
       }
       if(input$mod=="tau"){
         points(
-          colSums(eval(probsTet, envir = list(txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
+          colSums(eval(probsTet, envir = list(txmin= 1, txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
                     eval(factorAut, envir=list(tth=input$tth)))*input$tyadj*1000000,
           col="red", type = 'l', lty=1, lwd=2
         )
@@ -222,8 +235,8 @@ tet.server <- function(input, output) {
       }
       if(input$mod=="tal"){
         points(
-          colSums(eval(probsTet, envir = list(txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
-                    eval(factorAll, envir=list(tth=input$tth, diverg=input$tdiverg)))*input$tyadj*1000000,
+          colSums(eval(probsTet, envir = list(txmin= 1, txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
+                    eval(factorAll, envir=list(tth=input$tth, tdiverg=input$tdiverg)))*input$tyadj*1000000,
           col="red", type = 'l', lty=1, lwd=2
         )
         output$outText <- renderText(paste(
@@ -239,10 +252,14 @@ tet.server <- function(input, output) {
     }
     
     if(input$fitmod == "auto"){
-      
-      plot(counts[,1],counts[,2], xlim=c(0,input$axrange[2]), ylim=c(0, input$ymax*1000000),
-           xlab="K-mer multiplicity (coverage)", ylab="K-mer count", main = specPath)
-      
+
+      if(input$showData){
+        plot(counts[,1],counts[,2], xlim=c(0,input$axrange[2]), ylim=c(0, input$ymax*1000000),
+             xlab="K-mer multiplicity (coverage)", ylab="K-mer count", main = specPath)
+      } else {
+        plot(counts[,1],counts[,2], xlim=c(0,input$axrange[2]), ylim=c(0, input$ymax*1000000),
+             xlab="K-mer multiplicity (coverage)", ylab="K-mer count", main = specPath, type = 'n')
+      }      
       
       
       # show limits
@@ -443,8 +460,8 @@ tet.server <- function(input, output) {
 # Run all the code above ####
 
 # Set path to directory with k-mer spectra:
+#setwd("~/temp")
 setwd("~/git_repos/shiny-k-mers/data/")
-
  
 # Set "specPath" to the name of th espectrum file you want to fit:
 
@@ -455,7 +472,7 @@ setwd("~/git_repos/shiny-k-mers/data/")
 # specPath <- 'VI'
 # 
 # # tetraploids
-# specPath <- 'A0'
+specPath <- 'A0'
 # specPath <- 'A1'
 # specPath <- 'A2'
 # specPath <- 'A3'
