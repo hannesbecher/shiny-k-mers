@@ -31,9 +31,9 @@ Reducing the range helps:
 
 ![better.png](img/better.png)
 
-The bias parameter corresponds to the relative with of the peaks it is the same as used by Vurture et al. (2017). The noisier the sequencing data, the wider are the peaks.
+The bias parameter corresponds to the relative width of the peaks it is the same as used by Vurture et al. (2017). The noisier the sequencing data, the wider are the peaks.
 
-Theta corresponds to the genome-wide heterozygosity (between both genomes in diploids, between all four genomes in autotetraploids, or between homologous genomes in allotetraploids). The slider has a log10 scale. The default range of -2 to 0.6 corresponds to 0.01 to 4 in linear space. This is per k-mer. To get the value per nucleotide, you need to divide this by the k-mer length of your data.
+Theta corresponds to the genome-wide heterozygosity (between both genomes in diploids, between all four genomes in autotetraploids, or between homologous genomes in allotetraploids). The slider has a log10 scale, which means that the default range of -2 to 0.6 corresponds to 0.01 to 4 in linear space. This is per k-mer. To get the value per nucleotide, you need to divide this by the k-mer length of your data.
 
 The haploid, non-repetitive genome size corresponds to the number of unique k-mers in a haploid genome.
 
