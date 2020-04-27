@@ -28,6 +28,7 @@ Now you can set the range for the *genome parameters* in panel 3. Often, adjusti
 ![too_wide.png](img/too_wide.png)
 
 Reducing the range helps:
+
 ![better.png](img/better.png)
 
 The bias parameter corresponds to the relative with of the peaks it is the same as used by Vurture et al. (2017). The noisier the sequencing data, the wider are the peaks.
