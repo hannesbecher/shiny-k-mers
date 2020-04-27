@@ -104,7 +104,7 @@ tet.ui <- fluidPage(titlePanel("Tetmer"),
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.mod == 'tal' && input.fitmod == 'auto'",
-                                              wellPanel(h4("4rd: Allotetraploids only, adjst sub-genome split time"),
+                                              wellPanel(h4("4th: Allotetraploids only, adjst sub-genome split time"),
                                                         sliderInput('adiv', 'T (in units of 2Ne)',
                                                                     min=0.001, max=100,
                                                                     value=c(adivl, adivh))
