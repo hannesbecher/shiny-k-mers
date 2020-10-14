@@ -2,7 +2,7 @@
 
 *plus autotetraploids and diploids
 
-Tetmer is an R script relying on the R base package and shiny for visualisation. It was developed for the paper “Maintenance of species differences in closely related tetraploid parasitic Euphrasia (Orobanchaceae) on an isolated island” by Becher et al. *Plant Communications* (in preparation). The equations for the k-mer patterns were derived using the bSFS approach by Lohse et al. (2011, 2016).
+Tetmer is an R script relying on the R base package and shiny for visualisation. It was developed for the paper “Maintenance of species differences in closely related tetraploid parasitic *Euphrasia* (Orobanchaceae) on an isolated island” by [Becher et al. 2020 *Plant Communications*](https://doi.org/10.1016/j.xplc.2020.100105) . The equations for the k-mer patterns were derived using the bSFS approach by Lohse et al. (2011, 2016).
 
 
 ## Setting up and running
@@ -52,13 +52,18 @@ For allopolyploids, the time of the sub-genome divergence (T) is affected by thi
 * As seen in the second screenshot, the 1x peak fitted may be lower than what is seen in the data. The 1x peak may also sometimes be fitted higher. *Lower is better than higher.* If there is much contamination in the sequencing data, the contamination peak may overlap with the 1x peak. It is then plausible to have the fit include fewer k-mers than are seen in the data. It is never plausible to have the 1x peak fitted higher than the data.
 * If the (hard-coded) parameter ranges of the sliders are too narrow, they can be adjusted in the R script (`min` and `max` variables in lines 80 to 110).
 
+## Citation
+When using Tetmer for a publication, please cite:  
+
+**Becher H., Brown M. R., Powell G., Metherell C., Riddiford N. J., Twyford A. D. (2020).** Maintenance of species differences in closely related tetraploid parasitic *Euphrasia* (Orobanchaceae) on an isolated island. *Plant Communications*: 100105. [DOI: 10.1016/j.xplc.2020.100105](https://doi.org/10.1016/j.xplc.2020.100105)
+
 ## References
-**Lohse, K., Harrison, R. J., and Barton, N. H. (2011).** A General Method for Calculating Likelihoods Under the Coalescent Process. Genetics 189:977–987.
+**Lohse, K., Harrison, R. J., and Barton, N. H. (2011).** A General Method for Calculating Likelihoods Under the Coalescent Process. *Genetics* **189**:977–987.
 
-**Lohse, K., Chmelik, M., Martin, S. H., and Barton, N. H. (2016).** Efficient Strategies for Calculating Blockwise Likelihoods Under the Coalescent. Genetics 202:775–786.
+**Lohse, K., Chmelik, M., Martin, S. H., and Barton, N. H. (2016).** Efficient Strategies for Calculating Blockwise Likelihoods Under the Coalescent. *Genetics* **202**:775–786.
 
-**Mapleson, D., Garcia Accinelli, G., Kettleborough, G., Wright, J., and Clavijo, B. J. (2016).** KAT: a K-mer analysis toolkit to quality control NGS datasets and genome assemblies. Bioinformatics 33:574–576.
+**Mapleson, D., Garcia Accinelli, G., Kettleborough, G., Wright, J., and Clavijo, B. J. (2016).** KAT: a K-mer analysis toolkit to quality control NGS datasets and genome assemblies. *Bioinformatics* **33**:574–576.
 
-**Vurture, G. W., Sedlazeck, F. J., Nattestad, M., Underwood, C. J., Fang, H., Gurtowski, J., and Schatz, M. C. (2017).** GenomeScope: fast reference-free genome profiling from short reads. Bioinformatics 33:2202–2204.
+**Vurture, G. W., Sedlazeck, F. J., Nattestad, M., Underwood, C. J., Fang, H., Gurtowski, J., and Schatz, M. C. (2017).** GenomeScope: fast reference-free genome profiling from short reads. *Bioinformatics* **33**:2202–2204.
 
 
