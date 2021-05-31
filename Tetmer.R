@@ -191,7 +191,7 @@ tet.server <- function(input, output) {
         plot(counts[,1],counts[,2], xlim=c(0,input$txmax), ylim=c(0, input$tymax*1000),
              xlab="K-mer multiplicity (coverage)", ylab="K-mer count", main = specPath, type = 'n')
       }
-      legend("topleft", col=c(1,2), lwd=2, lty=c(0,2), pch=c(1,NA), legend=c("Data","Fit"))
+      legend("topleft", col=c(1,2), lwd=2, lty=c(0,1), pch=c(1,NA), legend=c("Data","Fit"))
       
       
       
@@ -269,7 +269,7 @@ tet.server <- function(input, output) {
       
       # show limits
       abline(v=input$axrange)        
-      legend("topleft", col=c(1,2), lwd=2, lty=c(0,2), pch=c(1, NA), legend=c("Data","Fit"))
+      legend("topleft", col=c(1,2), lwd=2, lty=c(0,1), pch=c(1, NA), legend=c("Data","Fit"))
       
       if(input$mod=="tal"){
         
