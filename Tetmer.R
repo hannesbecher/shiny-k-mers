@@ -120,12 +120,17 @@ tet.server <- function(input, output) {
     
     
     # read spectrum
-    #counts <- read.table(specPath, skip=xxx, col.names = c("Muliplicity","Count")) # skip "xxx" lines
-    counts <- read.table(specPath, col.names = c("Muliplicity","Count"))
+    #counts <- read.table(specPath, skip=xxx, col.names = c("Multiplicity","Count")) # skip "xxx" lines
+    counts <- read.table(specPath, col.names = c("Multiplicity","Count"))
     # cut off first row if 0-based spectrum
     if(counts[1,1] == 0) {
       counts <- counts[2:nrow(counts),]
     }
+    # add lines if spectrum starts with multiplicity > 1
+    offs = counts[1,1] - 1
+    
+    prepDF = data.frame(Multiplicity=rep(0, offs), Count=rep(0, offs))
+    counts <- rbind(prepDF, counts)
     
     probsDip <- expression(rbind(
       dnbinom(txmin:txmax, tkcov/tbias*1, mu = tkcov * 1),
@@ -463,7 +468,7 @@ tet.server <- function(input, output) {
 #setwd("~/temp")
 setwd("~/git_repos/shiny-k-mers/data/")
  
-# Set "specPath" to the name of th espectrum file you want to fit:
+# Set "specPath" to the name of thespectrum file you want to fit:
 
 # # diplods
 # specPath <- 'AN'
