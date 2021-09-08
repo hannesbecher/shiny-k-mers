@@ -1,22 +1,31 @@
 # TETMER – FITTING PARAMETERS TO K-MER SPECTRA OF ALLOTETRAPLOIDS*
 
-*plus autotetraploids and diploids
+*plus autotetraploids, triploids, and diploids
 
-Tetmer is an R script relying on the R base package and shiny for visualisation. It was developed for the paper “Maintenance of species differences in closely related tetraploid parasitic *Euphrasia* (Orobanchaceae) on an isolated island” by [Becher et al. 2020 *Plant Communications*](https://doi.org/10.1016/j.xplc.2020.100105) . The equations for the k-mer patterns were derived using the bSFS approach by Lohse et al. (2011, 2016).
+Tetmer is an R pacakge relying on the R base package and shiny for visualisation. It was originally developed for the paper “Maintenance of species differences in closely related tetraploid parasitic *Euphrasia* (Orobanchaceae) on an isolated island” by [Becher et al. 2020 *Plant Communications*](https://doi.org/10.1016/j.xplc.2020.100105). The equations for the k-mer patterns were derived using the bSFS approach by Lohse et al. (2011, 2016).
 
 
-## Setting up and running
-1.	No installation is required. Just download the repo or the R script.
-2.	Open Rstudio and execute all code up to the mark “Run all the code above” (around line 460)
-3.	Set `specPath` to be the path to your chosen k-mer spectrum file (see below for format).
-4.	Run the `shinyApp()` function (last line).
+## Setup
+1.	Download the [latest release](https://github.com/hannesbecher/shiny-k-mers/releases/download/v2.0.0-beta/Tetmer_2.0.0.tar.gz).
+2.	Open Rstudio and run `install.packages("path/to/Tetmer_2.0.0.tar.gz", repo=NULL)`.
+
+## Using Tetmer (brief)
+To use the interactive app, do this:
+1.	Load the Tetmer package `library(Tetmer)`
+2.	Import your data: `mySpec = read.spectrum("path/to/mySpectrumTextFile", "myCustomNameForPlotting")`
+3.	Run the Tetmer app: `tetmer(mySpec)`
+
+
+If you want to familiarise yourself with the interface, try running Tetmer on an example data set like `tetmer(E028)` (an allotetraploid plant called *Euphrasia arctica*) or `tetmer(E030)` (a diploid plant called *Euphrasia anglica*).
+
+If you only want to plot your data, try `plot(mySpec, log="xy")` or something like `plot(mySpec, xlim=c(0, 200), ylim=c(0, 10000000))`. The log-scale plot has the advantage that it captures all the data. The second (linear) plot is easier to interpret, but you may have to adjust the axis limits for your data.
 
 ## Format and data requirements
-Tetmer was developed for k-mer spectrum files as produced by KAT (Mapleson et al., 2016). These have a header of lines starting with `#` (R’s default comment character), which will be ignored by Tetmer. The actual k-mer spectrum is represented by two columns (multiplicity and k-mer count), which are separated by a single space. While the KAT default is to start at multiplicity 1, Tetmer should handle 0-based files, too. Because Tetmer does not attempt to estimate the full genome size, k-mer files can be truncated. There are some *example files* of allotetraploids and diploids (the data used by Becher et al.) in the directory data.
+Tetmer was originally developed for k-mer spectrum files as produced by KAT (Mapleson et al., 2016). These have a header of lines starting with `#` (R’s default comment character), which will be ignored by Tetmer. The actual k-mer spectrum is represented by two columns (multiplicity and k-mer count), which are separated by a single space. While the KAT default is to start at multiplicity 1, Tetmer should handle 0-based files, too. Because Tetmer does not attempt to estimate the full genome size, k-mer files can be truncated.
 
 Tetmer is intended for k-mer spectra generated from shotgun sequencing data of *single individuals*.
 
-## Using Tetmer
+## Using Tetmer (more detail)
 
 ### Auto fitting
 Most users will probably be interested in quickly fitting parameters to their data. In this case, select *Autofit* in the first control panel. The program will try to minimise the difference between the data (black circles) and the fit (red line). Most k-mer spectra have a *contamination peak* (going up the y-axis). This part of the spectrum *should be excluded* using the top slider in panel two (left handle), because it would otherwise cause a large unaccountable difference between data and model. The other end of the same slider should be set high enough to include all relevant peaks of the spectrum (roughly, ploidy times haploid sequencing coverage).
