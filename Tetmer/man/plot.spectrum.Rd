@@ -11,11 +11,11 @@
 
 \item{main}{(optional) A string passed to \code{plot()}}
 
-\item{xlab}{(optional) A string passed to \code{plot()}}
+\item{xlab}{(optional) A two-element numeric to \code{plot()}}
 
-\item{ylab}{(optional) A string passed to \code{plot()}}
+\item{ylab}{(optional) A two-element numeric passed to \code{plot()}}
 
-\item{...}{other keyword aruments to be passed to \code{plot()}}
+\item{...}{other keyword arguments to be passed to \code{plot()}}
 }
 \description{
 Uses the plot function to generate a scatter plot of a k-mer spectrum.

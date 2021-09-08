@@ -228,9 +228,9 @@ read.spectrum <- function(f,
 #'
 #' @param x An object of class spectrum
 #' @param main (optional) A string passed to `plot()`
-#' @param xlab (optional) A string passed to `plot()`
-#' @param ylab (optional) A string passed to `plot()`
-#' @param ... other keyword aruments to be passed to `plot()`
+#' @param xlab (optional) A two-element numeric to `plot()`
+#' @param ylab (optional) A two-element numeric passed to `plot()`
+#' @param ... other keyword arguments to be passed to `plot()`
 #'
 #' @return NULL
 #' @export
