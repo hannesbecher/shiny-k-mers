@@ -1,0 +1,19 @@
+Package: Tetmer
+Type: Package
+Title: Fitting Population Parameters to k-mer Spectra
+Version: 2.0.0
+Author: Hannes Becher
+Maintainer: The package maintainer <hannesbecher@gmx.de>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: GPL (>= 3)
+Depends: 
+    R (>= 2.10),
+    shiny
+Imports: graphics, methods, utils, stats
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE)
+Suggests: rmarkdown, knitr
+VignetteBuilder: knitr

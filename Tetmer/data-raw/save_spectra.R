@@ -1,0 +1,5 @@
+library(usethis)
+E030 <- read.spectrum("~/Dropbox/manuscripts/2108_kmers_gs/data/analyseSpectra/spectra/E030full.hist.no0", "E030")
+E028 <- read.spectrum("~/git_repos/shiny-k-mers/data/A0", "E028")
+use_data(E030, overwrite = T)
+use_data(E028, overwrite = T)
