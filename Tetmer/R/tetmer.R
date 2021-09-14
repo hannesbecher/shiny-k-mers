@@ -180,9 +180,10 @@ tetmer <- function(sp){
 #' @slot name A string indicating the name of the spectrum (or sample)
 #'
 #' @slot data A `data.frame` with numeric cloumns mult and count.
+#' @slot k A `numeric` indiciating the k-mer length.
 #'
 #' @export
-setClass("spectrum", slots=list(name="character", data="data.frame"))
+setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
 
 
 
@@ -192,7 +193,8 @@ setClass("spectrum", slots=list(name="character", data="data.frame"))
 #'
 #'
 #' @param f A string indicating the path to th spectrum file
-#' @param nam (otional) A string indicaing the name of the spectrum
+#' @param nam (otional) A string indicating the name of the spectrum
+#' @param k (otional) A numeric indicating the k-mer length
 #' @param ... keyword arguments to be passed to `read.table()`
 #' @return A two-element list comprising a names string and a two-column data frame of the
 #' k-mer spectrum
@@ -207,13 +209,15 @@ setClass("spectrum", slots=list(name="character", data="data.frame"))
 #' unlink(tf)
 #' plot(sp)
 read.spectrum <- function(f,
-                          nam="spectrum",
+                          nam="MySpectrum",
+                          k=0,
                           ...){
   sp = read.table(f, ...)
   names(sp) = c("mult", "count")
   return(new("spectrum",
              name=nam,
-             data=sp
+             data=sp,
+             k=k
   )
   )
 }
@@ -405,6 +409,170 @@ pointsFit <- function(input, optimised=0){
 #' to be displayed in the Tetmer window.
 #' @keywords internal
 textOut <- function(input, optimised=0){
+  if(sp@k > 0){
+    if(input$fitmod == "man"){
+      if(input$mod=="d"){
+        return(renderText(paste(
+          "DIPLOID MODEL, MANUAL FIT",
+          "\n    haploid k-mer cov:", input$tkcov,
+          "\n      per k-mer theta:", input$tth,
+          "\nhapl non-rep GS (Mbp):", input$tyadj,
+          "\n    bias (peak width):", input$tbias
+        ))
+        )
+      }
+      if(input$mod=="tau"){
+        return(
+          renderText(paste(
+            "AUTOTETRAPLOID MODEL, MANUAL FIT",
+            "\n    haploid k-mer cov:", input$tkcov,
+            "\n      per k-mer theta:", input$tth,
+            "\nhapl non-rep GS (Mbp):", input$tyadj,
+            "\n    bias (peak width):", input$tbias
+          ))
+        )
+      }
+      if(input$mod=="traaa"){
+        return(
+          renderText(paste(
+            "AUTOTRIPLOID MODEL, MANUAL FIT",
+            "\n    haploid k-mer cov:", input$tkcov,
+            "\n      per k-mer theta:", input$tth,
+            "\nhapl non-rep GS (Mbp):", input$tyadj,
+            "\n    bias (peak width):", input$tbias
+          ))
+        )
+      }
+      if(input$mod=="traab"){
+        return(
+          renderText(paste(
+            "ALLOTRIPLOID MODEL, MANUAL FIT",
+            "\n    haploid k-mer cov:", input$tkcov,
+            "\n      per k-mer theta:", input$tth,
+            "\n                    T:", input$tdiverg,
+            "\nhapl non-rep GS (Mbp):", input$tyadj,
+            "\n    bias (peak width):", input$tbias
+          ))
+        )
+      }
+      if(input$mod=="tal"){
+        return(
+          renderText(paste(
+            "ALLOTETRAPLOID MODEL, MANUAL FIT",
+            "\n    haploid k-mer cov:", input$tkcov,
+            "\n      per k-mer theta:", input$tth,
+            "\n                    T:", input$tdiverg,
+            "\nhapl non-rep GS (Mbp):", input$tyadj,
+            "\n    bias (peak width):", input$tbias
+          ))
+        )
+      }
+    } # if man
+    if(input$fitmod == "auto"){
+      if(input$mod=="tal"){
+        return(
+          renderText(paste(
+            "ALLOTETRAPLOID MODEL, AUTO FITTED",
+            "\n    haploid k-mer cov:", round(optimised$par[1],1),
+#            "\n      per k-mer theta:", round(optimised$par[3],4),
+            "\n per nucleotide theta:", round(optimised$par[3] / sp@k,5),
+            "\n                    T:", round(optimised$par[5],2),
+            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\nper nucleotide diverg:", round(optimised$par[3]*optimised$par[5]/sp@k, 4),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n         k-mer length:", sp@k,
+            "\n    haploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 per k-mer theta:", input$ath[1], input$ath[2],
+            "\n                    T:", input$adiv[1], input$adiv[2],
+            "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+        )
+      } # if allotet
+      if(input$mod=="traab"){
+        return(
+          renderText(paste(
+            "ALLOTRIPLOID MODEL, AUTO FITTED",
+            "\n    haploid k-mer cov:", round(optimised$par[1],1),
+#            "\n      per k-mer theta:", round(optimised$par[3],4),
+            "\n per nucleotide theta:", round(optimised$par[3] / sp@k,5),
+            "\n                    T:", round(optimised$par[5],2),
+            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],1),
+#            "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
+            "\nper nucleotide diverg:", round(optimised$par[3]*optimised$par[5], 4),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n         k-mer length:", sp@k,
+            "\n    haploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 per k-mer theta:", input$ath[1], input$ath[2],
+            "\n                    T:", input$adiv[1], input$adiv[2],
+            "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+        )
+      } # if allotrip
+      if(input$mod=="tau"){
+        return(
+          renderText(paste(
+            "AUTOTETRAPLOID MODLE, AUTO FITTED",
+            "\n    haploid k-mer cov:", round(optimised$par[1],1),
+#            "\n      per k-mer theta:", round(optimised$par[3],4),
+            "\n per nucleotide theta:", round(optimised$par[3] / sp@k,5),
+            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n         k-mer length:", sp@k,
+            "\n    haploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 per k-mer theta:", input$ath[1], input$ath[2],
+            "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+        )
+      } # if tau
+      if(input$mod=="traaa"){
+        return(
+          renderText(paste(
+            "AUTOTRIPLOID MODLE, AUTO FITTED",
+            "\n    haploid k-mer cov:", round(optimised$par[1],1),
+#            "\n      per k-mer theta:", round(optimised$par[3],4),
+            "\n per nucleotide theta:", round(optimised$par[3] / sp@k,5),
+            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n         k-mer length:", sp@k,
+            "\n    haploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 per k-mer theta:", input$ath[1], input$ath[2],
+            "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+        )
+      } # if traab
+      if(input$mod=="d"){
+        return(
+          renderText(paste(
+            "DIPLOID MODEL, AUTO FITTED",
+            "\n    haploid k-mer cov:", round(optimised$par[1],1),
+#            "\n      per k-mer theta:", round(optimised$par[3],4),
+            "\n per nucleotide theta:", round(optimised$par[3] / sp@k,5),
+            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n         k-mer length:", sp@k,
+            "\n    haploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 per k-mer theta:", input$ath[1], input$ath[2],
+            "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+        )
+      } #if d
+    } # if auto fit
+  } # if k > 0
   if(input$fitmod == "man"){
     if(input$mod=="d"){
       return(renderText(paste(
@@ -544,6 +712,7 @@ textOut <- function(input, optimised=0){
           "DIPLOID MODEL, AUTO FITTED",
           "\n    haploid k-mer cov:", round(optimised$par[1],1),
           "\n      per k-mer theta:", round(optimised$par[3],4),
+#          "\n      per nucleotide theta:", round(optimised$par[3] / sp@k,4),
           "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
           "\n    bias (peak width):", round(optimised$par[2],1),
           "\n\nSTARTING RANGES (MIN MAX)",

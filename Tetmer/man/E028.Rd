@@ -7,10 +7,11 @@
 \format{
 A \code{spectrum} object containing a name and data frame:
 \describe{
-\item{name}{The name E028}
-\item{data}{A dataframe with coulmns \describe{
-\item{mult}{K-mer multiplicity}
-\item{count}{The number of different k-mer at a given multiplicity}
+\item{\code{name}}{The name 'E. arctica, E028'}
+\item{\code{k}}{The k-mer length of 27}
+\item{\code{data}}{A dataframe with coulmns \describe{
+\item{\code{mult}}{K-mer multiplicity}
+\item{\code{count}}{The number of different k-mer at a given multiplicity}
 }
 }
 }
@@ -27,5 +28,6 @@ A k-mer spectrum if allotetraploid \emph{E. arctica}.
 \examples{
 plot(E028, log="xy")
 plot(E028, xlim=c(0, 200), ylim=c(0, 10000000))
+tetmer(E028)
 }
 \keyword{datasets}
