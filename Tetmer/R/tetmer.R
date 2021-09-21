@@ -337,7 +337,7 @@ plotSpecApp <- function(input, spec){
     abline(v=input$axrange)
 
   }
-  legend("topleft", col=c(1,2), lwd=2, lty=c(0,1), pch=c(1,NA), legend=c("Data","Fit"))
+  legend("topright", col=c(1,2,2), lwd=c(2, 2, 1), lty=c(0,1, 2), pch=c(1,NA, NA), legend=c("Data","Fit", "Extrapolation"))
 
 
 }
@@ -392,6 +392,20 @@ pointsFit <- function(input, optimised=0){
                                        tdiverg=optimised$par[5]))
                      )*optimised$par[4]*1000000,
              col="red", type = 'l', lty=1, lwd=2
+
+      )
+      points(0:input$axrange[1],
+             colSums(eval(probs,
+                          envir = list(txmin=0,
+                                       txmax=input$axrange[1],
+                                       tkcov=optimised$par[1],
+                                       tbias=optimised$par[2]
+                          )) *
+                       eval(factors,
+                            envir=list(tth=optimised$par[3],
+                                       tdiverg=optimised$par[5]))
+             )*optimised$par[4]*1000000,
+             col="red", type = 'l', lty=2, lwd=1
       )
 
 
