@@ -64,8 +64,10 @@ factorTraaa <- expression(
 
 factorTraab <- expression(
   c(
-    tth^(-tdiverg*tth)*(-2-4*tth+exp(tdiverg*tth)*(2+7*tth+3*tth^2)) / (2+3*tth+tth^2),
+    exp(-tdiverg*tth)*(-2-4*tth+exp(tdiverg*tth)*(2+7*tth+3*tth^2)) / (2+3*tth+tth^2),
+
     (1 + ((2*exp(-tdiverg*tth) * (tth-1))/(2+tth)))/ (1 + tth),
+
     2*exp(-tdiverg*tth) / (2 + 3*tth + tth^2)
   )
 )

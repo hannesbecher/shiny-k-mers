@@ -52,6 +52,7 @@ tet.server <- function(input, output) {
       addvertlines(input) # vertical lines, multiples of n
       pointsFit(input)
       output$outText <- textOut(input, 0, spec)
+      #gsFit(input, 0) # debug
       return()
 
     }
@@ -67,16 +68,18 @@ tet.server <- function(input, output) {
       pointsExtrap(input, optimised)
       pointsContam(input, optimised, spec)
       output$outText <- textOut(input, optimised, spec)
+      #gsFit(input, optimised) # debug
 
     }# if auto
+
 
   })
 }
 
 
 # The user interface
-tet.ui <- fluidPage(titlePanel("Tetmer"),
-                    "Fitting paramters to k-mer spectra (by Hannes Becher)",
+tet.ui <- fluidPage(titlePanel("Tetmer v2.1.0"),
+                    "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
                       column(4,
@@ -418,6 +421,61 @@ pointsFit <- function(input, optimised=0){
   }
 }
 
+# for debug only
+gsFit <- function(input, optimised=0){
+
+  if(input$fitmod=="man"){
+    if(input$mod %in% c("d", "tau", "traaa")){
+      print(sum(1:1000 *
+        colSums(eval(probs, envir = list(txmin= 1, txmax=1000, tkcov=input$tkcov, tbias=input$tbias)) *
+                  eval(factors, envir=list(tth=input$tth)))*input$tyadj*1000000
+      ) / input$tkcov /1000000
+      )
+    }
+    if(input$mod %in% c("tal", "traab")){
+      print(sum(1:1000 *
+        colSums(eval(probs, envir = list(txmin= 1, txmax=1000, tkcov=input$tkcov, tbias=input$tbias)) *
+                  eval(factors, envir=list(tth=input$tth, tdiverg=input$tdiverg)))*input$tyadj*1000000
+      ) / input$tkcov /1000000
+      )
+    }
+  }
+  if(input$fitmod=="auto"){
+    if(input$mod %in% c("d", "tau", "traaa")){
+      # fit within range
+      print(sum(1:1000 *
+             colSums(eval(probs, envir = list(txmin=1,
+                                              txmax=1000,
+                                              tkcov=optimised$par[1],
+                                              tbias=optimised$par[2])) *
+                       eval(factors, envir=list(tth=optimised$par[3]))
+                     )*optimised$par[4]*1000000
+      )  / optimised$par[1] / 1000000
+      )
+
+    }
+    if(input$mod %in% c("tal", "traab")){
+      print(sum(1:1000 *
+             colSums(eval(probs,
+                          envir = list(txmin=1,
+                                       txmax=1000,
+                                       tkcov=optimised$par[1],
+                                       tbias=optimised$par[2]
+                          )) *
+                       eval(factors,
+                            envir=list(tth=optimised$par[3],
+                                       tdiverg=optimised$par[5]))
+             )*optimised$par[4]*1000000
+      )   / optimised$par[1] / 1000000)
+
+
+
+    }
+  }
+}
+
+
+
 # only run in auto mode
 pointsExtrap <- function(input, optimised){
   if(input$mod %in% c("d", "tau", "traaa")){
@@ -541,7 +599,7 @@ textOut <- function(input, optimised, spec){
             "\n                    T:", input$tdiverg,
             "\n     non-rep GS (Mbp):", input$tyadj,
             "\n    bias (peak width):", input$tbias,
-            "\n    diverg per k-mer :", round(input$tth*input$tdiverg, 4),
+            "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4),
             "\ndiverg per nucleotide:", round(input$tth*input$tdiverg/spec@k, 4)
           ))
         )
@@ -557,7 +615,7 @@ textOut <- function(input, optimised, spec){
             "\n                    T:", input$tdiverg,
             "\n     non-rep GS (Mbp):", input$tyadj,
             "\n    bias (peak width):", input$tbias,
-            "\n    diverg per k-mer :", round(input$tth*input$tdiverg, 4),
+            "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4),
             "\ndiverg per nucleotide:", round(input$tth*input$tdiverg/spec@k, 4)
           ))
         )
@@ -570,12 +628,12 @@ textOut <- function(input, optimised, spec){
             "ALLOTETRAPLOID MODEL, AUTO FITTED",
             "\n         k-mer length:", spec@k,
             "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-            "\n         θ  per k-mer:", round(optimised$par[3],4),
+            "\n          θ per k-mer:", round(optimised$par[3],4),
             "\n     θ per nucleotide:", round(optimised$par[3] / spec@k,5),
             "\n                    T:", round(optimised$par[5],2),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
             "\n    bias (peak width):", round(optimised$par[2],1),
-            "\ndiverg per k-mer :", round(optimised$par[3]*optimised$par[5], 4),
+            "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
             "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/spec@k, 4),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
@@ -593,12 +651,12 @@ textOut <- function(input, optimised, spec){
             "ALLOTRIPLOID MODEL, AUTO FITTED",
             "\n         k-mer length:", spec@k,
             "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-            "\n         θ  per k-mer:", round(optimised$par[3],4),
+            "\n          θ per k-mer:", round(optimised$par[3],4),
             "\n     θ per nucleotide:", round(optimised$par[3] / spec@k,5),
             "\n                    T:", round(optimised$par[5],2),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
             "\n    bias (peak width):", round(optimised$par[2],1),
-            "\ndiverg per k-mer :", round(optimised$par[3]*optimised$par[5], 4),
+            "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
             "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/spec@k, 4),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
@@ -616,7 +674,7 @@ textOut <- function(input, optimised, spec){
             "AUTOTETRAPLOID MODEL, AUTO FITTED",
             "\n         k-mer length:", spec@k,
             "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-            "\n         θ  per k-mer:", round(optimised$par[3],4),
+            "\n          θ per k-mer:", round(optimised$par[3],4),
             "\n     θ per nucleotide:", round(optimised$par[3] / spec@k,5),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
             "\n    bias (peak width):", round(optimised$par[2],1),
@@ -635,9 +693,9 @@ textOut <- function(input, optimised, spec){
             "AUTOTRIPLOID MODEL, AUTO FITTED",
             "\n         k-mer length:", spec@k,
             "\n monoploid k-mer cov:", round(optimised$par[1],1),
-            "\n         θ  per k-mer:", round(optimised$par[3],4),
+            "\n          θ per k-mer:", round(optimised$par[3],4),
             "\n     θ per nucleotide:", round(optimised$par[3] / spec@k,5),
-            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
             "\n    bias (peak width):", round(optimised$par[2],1),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
@@ -654,9 +712,9 @@ textOut <- function(input, optimised, spec){
             "DIPLOID MODEL, AUTO FITTED",
             "\n         k-mer length:", spec@k,
             "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-            "\n         θ  per k-mer:", round(optimised$par[3],4),
+            "\n          θ per k-mer:", round(optimised$par[3],4),
             "\n     θ per nucleotide:", round(optimised$par[3] / spec@k,5),
-            "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
             "\n    bias (peak width):", round(optimised$par[2],1),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
@@ -674,8 +732,8 @@ textOut <- function(input, optimised, spec){
       return(renderText(paste(
         "DIPLOID MODEL, MANUAL FIT",
         "\n  monoploid k-mer cov:", input$tkcov,
-        "\n         θ  per k-mer:", input$tth,
-        "\nhapl non-rep GS (Mbp):", input$tyadj,
+        "\n          θ per k-mer:", input$tth,
+        "\n     non-rep GS (Mbp):", input$tyadj,
         "\n    bias (peak width):", input$tbias
       ))
       )
@@ -685,8 +743,8 @@ textOut <- function(input, optimised, spec){
         renderText(paste(
           "AUTOTETRAPLOID MODEL, MANUAL FIT",
           "\n  monoploid k-mer cov:", input$tkcov,
-          "\n         θ  per k-mer:", input$tth,
-          "\nhapl non-rep GS (Mbp):", input$tyadj,
+          "\n          θ per k-mer:", input$tth,
+          "\n     non-rep GS (Mbp):", input$tyadj,
           "\n    bias (peak width):", input$tbias
         ))
       )
@@ -696,8 +754,8 @@ textOut <- function(input, optimised, spec){
         renderText(paste(
           "AUTOTRIPLOID MODEL, MANUAL FIT",
           "\n  monoploid k-mer cov:", input$tkcov,
-          "\n         θ  per k-mer:", input$tth,
-          "\nhapl non-rep GS (Mbp):", input$tyadj,
+          "\n          θ per k-mer:", input$tth,
+          "\n     non-rep GS (Mbp):", input$tyadj,
           "\n    bias (peak width):", input$tbias
         ))
       )
@@ -707,9 +765,9 @@ textOut <- function(input, optimised, spec){
         renderText(paste(
           "ALLOTRIPLOID MODEL, MANUAL FIT",
           "\n  monoploid k-mer cov:", input$tkcov,
-          "\n         θ  per k-mer:", input$tth,
+          "\n          θ per k-mer:", input$tth,
           "\n                    T:", input$tdiverg,
-          "\nhapl non-rep GS (Mbp):", input$tyadj,
+          "\n     non-rep GS (Mbp):", input$tyadj,
           "\n    bias (peak width):", input$tbias,
           "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4)
         ))
@@ -720,9 +778,9 @@ textOut <- function(input, optimised, spec){
         renderText(paste(
           "ALLOTETRAPLOID MODEL, MANUAL FIT",
           "\n  monoploid k-mer cov:", input$tkcov,
-          "\n         θ  per k-mer:", input$tth,
+          "\n          θ per k-mer:", input$tth,
           "\n                    T:", input$tdiverg,
-          "\nhapl non-rep GS (Mbp):", input$tyadj,
+          "\n     non-rep GS (Mbp):", input$tyadj,
           "\n    bias (peak width):", input$tbias,
           "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4)
         ))
@@ -735,16 +793,16 @@ textOut <- function(input, optimised, spec){
         renderText(paste(
           "ALLOTETRAPLOID MODEL, AUTO FITTED",
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n         θ  per k-mer:", round(optimised$par[3],4),
+          "\n          θ per k-mer:", round(optimised$par[3],4),
           "\n                    T:", round(optimised$par[5],2),
-          "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
           "\n    bias (peak width):", round(optimised$par[2],1),
           "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\n    log10 θ per k-mer:", input$ath[1], input$ath[2],
           "\n                    T:", input$adiv[1], input$adiv[2],
-          "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
           "\n    bias (peak width):", input$abias[1], input$abias[2],
           "\n              x range:", input$axrange[1],input$axrange[2]
         ))
@@ -757,14 +815,14 @@ textOut <- function(input, optimised, spec){
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n          θ per k-mer:", round(optimised$par[3],4),
           "\n                    T:", round(optimised$par[5],2),
-          "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
           "\n    bias (peak width):", round(optimised$par[2],1),
           "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\n    log10 θ per k-mer:", input$ath[1], input$ath[2],
           "\n                    T:", input$adiv[1], input$adiv[2],
-          "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
           "\n    bias (peak width):", input$abias[1], input$abias[2],
           "\n              x range:", input$axrange[1],input$axrange[2]
         ))
@@ -776,12 +834,12 @@ textOut <- function(input, optimised, spec){
           "AUTOTETRAPLOID MODEL, AUTO FITTED",
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n          θ per k-mer:", round(optimised$par[3],4),
-          "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
           "\n    bias (peak width):", round(optimised$par[2],1),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\n    log10 θ per k-mer:", input$ath[1], input$ath[2],
-          "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
           "\n    bias (peak width):", input$abias[1], input$abias[2],
           "\n              x range:", input$axrange[1],input$axrange[2]
         ))
@@ -793,12 +851,12 @@ textOut <- function(input, optimised, spec){
           "AUTOTRIPLOID MODEL, AUTO FITTED",
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n          θ per k-mer:", round(optimised$par[3],4),
-          "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
           "\n    bias (peak width):", round(optimised$par[2],1),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\n    log10 θ per k-mer:", input$ath[1], input$ath[2],
-          "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
           "\n    bias (peak width):", input$abias[1], input$abias[2],
           "\n              x range:", input$axrange[1],input$axrange[2]
         ))
@@ -810,12 +868,12 @@ textOut <- function(input, optimised, spec){
           "DIPLOID MODEL, AUTO FITTED",
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n          θ per k-mer:", round(optimised$par[3],4),
-          "\nhapl non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
           "\n    bias (peak width):", round(optimised$par[2],1),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\n    log10 θ per k-mer:", input$ath[1], input$ath[2],
-          "\nhapl non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
           "\n    bias (peak width):", input$abias[1], input$abias[2],
           "\n              x range:", input$axrange[1],input$axrange[2]
         ))
