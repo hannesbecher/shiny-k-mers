@@ -8,6 +8,7 @@ Tetmer is an R pacakge relying on the R base package and shiny for visualisation
 ## Setup
 1.	Download the [latest release here](https://github.com/hannesbecher/shiny-k-mers/releases/tag/v2.0.0-beta).
 2.	Open Rstudio and run `install.packages("path/to/Tetmer_2.0.0.tar.gz", repo=NULL)`.
+3.	To see if it works run `library(Tetmer)` and then `tetmer(E028)`. An interactive window should pop up.
 
 ## Using Tetmer (brief)
 To use the interactive app, do this:
