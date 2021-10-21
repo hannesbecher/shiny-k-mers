@@ -4,12 +4,14 @@
 \alias{read.spectrum}
 \title{Read in a k-mer spectrum}
 \usage{
-read.spectrum(f, nam = "spectrum", ...)
+read.spectrum(f, nam = "MySpectrum", k = 0, ...)
 }
 \arguments{
 \item{f}{A string indicating the path to th spectrum file}
 
-\item{nam}{(otional) A string indicaing the name of the spectrum}
+\item{nam}{(otional) A string indicating the name of the spectrum}
+
+\item{k}{(otional) A numeric indicating the k-mer length}
 
 \item{...}{keyword arguments to be passed to \code{read.table()}}
 }

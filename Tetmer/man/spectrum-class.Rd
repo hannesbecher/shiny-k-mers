@@ -13,5 +13,7 @@ A named k-mer spectrum class
 \item{\code{name}}{A string indicating the name of the spectrum (or sample)}
 
 \item{\code{data}}{A \code{data.frame} with numeric cloumns mult and count.}
+
+\item{\code{k}}{A \code{numeric} indiciating the k-mer length.}
 }}
 

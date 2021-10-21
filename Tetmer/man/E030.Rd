@@ -7,16 +7,17 @@
 \format{
 A \code{spectrum} object containing a name and data frame:
 \describe{
-\item{name}{The name E028}
-\item{data}{A dataframe with coulmns \describe{
-\item{mult}{K-mer multiplicity}
-\item{count}{The number of different k-mer at a given multiplicity}
+\item{\code{name}}{The name 'E. anglica, E030'}
+\item{\code{k}}{The k-mer length of 21}
+\item{\code{data}}{A dataframe with coulmns \describe{
+\item{\code{mult}}{K-mer multiplicity}
+\item{\code{count}}{The number of different k-mer at a given multiplicity}
 }
 }
 }
 }
 \source{
-Becher et al. (2020) \url{https://doi.org/10.1016/j.xplc.2020.100105}
+Source!
 }
 \usage{
 E030
@@ -27,5 +28,6 @@ A k-mer spectrum of diploid \emph{E. anglica}.
 \examples{
 plot(E030, log="xy")
 plot(E030, xlim=c(0, 200), ylim=c(0, 10000000))
+tetmer(E030)
 }
 \keyword{datasets}
