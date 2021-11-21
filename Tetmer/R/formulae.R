@@ -54,6 +54,33 @@ factorAll <- expression(
 
 )
 
+factorTse <- expression(
+  pal * c(
+    4*exp(-3*tth*tdiverg)*tth*(
+      -2*exp(tdiverg*(tth-2)) +
+        exp(3*tdiverg*tth) * (2+tth)^2 * (3 + tth) -
+        2*exp(2*tth*tdiverg)*(3+4*tth+tth^2)
+    ),
+    2*exp(-1/2*tdiverg*(4+5*tth))*(
+      6*exp(tdiverg*tth/2)*tth+
+        exp(1/2*tdiverg*(4+5*tth)) * (2+tth)^2 * (3 + tth) +
+        2*exp(2*tdiverg+3/2*tdiverg*tth)*
+        (-6-8*tth+tth^2+tth^3)
+    ),
+    8*exp(-tdiverg*(3+4*tth))*tth*(
+      -exp(tdiverg+2*tdiverg*tth)+
+        exp(3+tdiverg*(1+tth))*(3+tth)
+    ),
+    2*exp(-2*tdiverg*(1+tth))*(
+      tth + 2*exp(tdiverg*(2+tth))*(3+tth)
+    )
+  )/ (1+tth) / (2+tth)^2 / (3+tth) +
+    (1-pal) *   c(4*tth/(3+tth),
+                  6*tth/(6+5*tth+tth^2),
+                  8*tth/(6+11*tth+6*tth^2+tth^3),
+                  6/(6+11*tth+6*tth^2+tth^3))
+)
+
 factorTraaa <- expression(
   c(
     3*tth / (2 + tth),

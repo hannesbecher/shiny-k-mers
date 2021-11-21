@@ -1,7 +1,7 @@
 Package: Tetmer
 Type: Package
 Title: Fitting Population Parameters to k-mer Spectra
-Version: 2.1.0
+Version: 2.1.1
 Author: Hannes Becher
 Maintainer: The package maintainer <hannesbecher@gmx.de>
 Description: This package contains a shiny app for fitting population parameters to k-mer spectra.
