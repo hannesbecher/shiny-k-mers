@@ -132,7 +132,7 @@ tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
                                                         numericInput('tdiverg', 'T (in units of 2Ne)', tdiverg)
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tse'].includes(input.mod))",
-                                              wellPanel(h4("4th: Only seg. allopolyploids, adjust p-allo"),
+                                              wellPanel(h4("5th: Only seg. allopolyploids, adjust p-allo"),
                                                         numericInput('pallo', 'p-allo', pallo)
                                               ))
                              ),
