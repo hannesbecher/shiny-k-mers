@@ -4,7 +4,7 @@
 \alias{textOut}
 \title{Generate text for Tetmer window}
 \usage{
-textOut(input, optimised = 0)
+textOut(input, optimised)
 }
 \arguments{
 \item{input}{Input from the GUI (contains plotting range, model, etc.)}

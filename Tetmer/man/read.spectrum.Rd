@@ -23,10 +23,10 @@ k-mer spectrum
 Uses \code{read.table()} to read in a k-mer spectrum.
 }
 \examples{
-testdf <- data.frame(mult=1:100, count = 100:1)
-tf <- tempfile()
-write.table(testdf, tf)
-sp <- read.spectrum(tf, nam = "Test spectrum")
-unlink(tf)
-plot(sp)
+\dontrun{testdf <- data.frame(mult=1:100, count = 100:1)}
+\dontrun{tf <- tempfile()}
+\dontrun{write.table(testdf, tf)}
+\dontrun{sp <- read.spectrum(tf, nam = "Test spectrum")}
+\dontrun{unlink(tf)}
+\dontrun{plot(sp)}
 }

@@ -28,6 +28,33 @@ axrangeh <- 200
 apallol <- 0.01
 apalloh <- 0.99
 
+.sliderRanges <-list(gsMin=1,
+                     gsMax=2000,
+                     kcovMin=5,
+                     kcovMax=300,
+                     biasMin=0.01,
+                     biasMax=4,
+                     thMin=-4,
+                     thMax=1,
+                     divMin=0.001,
+                     divMax=100,
+                     xrangeMin=0,
+                     xrangeMax=500,
+                     palloMin=0,
+                     palloMax=1,
+                     ymax=30)
+
+
+modelClasses <-
+  list("Diploid" = "d",
+                     "Triploid (aaa)" = "traaa",
+                     "Triploid (aab)" = "traab",
+                     "Tetraploid (aaaa)" = "tau",
+                     "Tetraploid (aabb)" = "tal"#,
+                     #"Tetraploid (seg.)" = "tse"
+)
+
+
 
 #' Run the Tetmer app
 #'
@@ -66,6 +93,7 @@ tet.server <- function(input, output) {
       minFun <<- makeMinFun(input)
       startingVals <<- getStartingVals(input)
       .optimised <<- doOptimisation(input, .spec)
+      .model <<- input$mod
       addvertlines(input, .optimised)
       pointsFit(input, .optimised)
       pointsExtrap(input, .optimised)
@@ -85,6 +113,19 @@ tet.server <- function(input, output) {
                       textOut(input, 0),
                       textOut(input, .optimised)),
                con=outF)
+  })
+
+  observeEvent(input$saveFitAs, {
+    outF <- file.choose(new=T)
+    if(!endsWith(outF, "txt")) {outF <- paste0(outF, ".txt")}
+    #paste0(getwd(), "/", .spec@name, ".fit.txt")
+    print(paste("Saving fit to", outF))
+    #print(textOut(input, 0))
+    writeLines(ifelse(input$fitmod=="man",
+                      textOut(input, 0),
+                      textOut(input, .optimised)),
+               con=outF)
+
 
   })
   observeEvent(input$histFile, {
@@ -135,37 +176,37 @@ tet.server <- function(input, output) {
 
 
 # User interface ####
-tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
+
+
+
+
+makeUI <- function(){
+  fluidPage(titlePanel("Tetmer v2.1.1"),
                     "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
                       column(4,
                              verbatimTextOutput("outText"),
-                             fluidRow(actionButton("saveFit", "Save Fit"),
-                                      numericInput("kVal", "k", 0),
+                             fluidRow(actionButton("saveFit", "Save fit"),
+                                      actionButton("saveFitAs", "Save fit as..."),
+                                      numericInput("kVal", "k-mer size (only for Drag'n'Drop)", 0),
                                       fileInput("histFile", "Choose or drop spectrum file"))
                       )
                     ),
                     fluidRow(
                       column(3,
-                             wellPanel(h4("1st: Select fitting mode and model"),
-                                       checkboxInput("showData", "Show data", value = TRUE),
-                                       radioButtons("fitmod", "Fitting mode",
-                                                    c("Manual" = "man",
-                                                      "Autofit" = "auto")
-                                       ),
-                                       radioButtons("mod", "Model",
-                                                    c("Diploid" = "d",
-                                                      "Triploid (aaa)" = "traaa",
-                                                      "Triploid (aab)" = "traab",
-                                                      "Tetraploid (aaaa)" = "tau",
-                                                      "Tetraploid (aabb)" = "tal",
-                                                      "Tetraploid (seg.)" = "tse"
 
+                                              wellPanel(h4("1st: Select fitting mode and model"),
+                                                        checkboxInput("showData", "Show data", value = TRUE),
+                                                        radioButtons("fitmod", "Fitting mode",
+                                                                     c("Manual" = "man",
+                                                                       "Autofit" = "auto")
+                                                        ),
+                                                        radioButtons("mod", "Model", modelClasses
 
-                                                    )
-                                       )
-                             )
+                                                        )
+                                              )
+
                       ),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'man'",
@@ -180,7 +221,7 @@ tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
                                                 h4("3rd: Param ranges"),
                                                 numericInput('tkcov', 'Monoploid k-mer multiplicity', tkcov),
                                                 numericInput('tbias', 'Peak width', tbias),
-                                                numericInput('tth', 'θ', tth),
+                                                numericInput('tth', 'theta', tth),
                                                 numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', tyadj)
                                               ))),
                       column(3,
@@ -197,10 +238,10 @@ tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
                              conditionalPanel(condition = "input.fitmod == 'auto'",
                                               wellPanel(h4("2nd: Adjust the fitting area, make all data peaks visible"),
                                                         sliderInput("axrange", "x limits for fitting",
-                                                                    min=0, max = 500,
+                                                                    min=.sliderRanges$xrangeMin, max = .sliderRanges$xrangeMax,
                                                                     value=c(axrangel,axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
-                                                                    min=0, max = 100,
+                                                                    min=0, max = .sliderRanges$ymax,
                                                                     value=10)
                                               ))),
                       column(3,
@@ -208,29 +249,29 @@ tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
                                               wellPanel(h4("3rd: Param ranges"),
 
                                                         sliderInput('akcov', 'k-mer  multiplicity',
-                                                                    min=5, max = 300,
+                                                                    min=.sliderRanges$kcovMin, max = .sliderRanges$kcovMax,
                                                                     value=c(akcovl, akcovh)),
                                                         sliderInput('abias', 'Peak width',
-                                                                    min=0.01, max = 4,
+                                                                    min=.sliderRanges$biasMin, max = .sliderRanges$biasMax,
                                                                     value=c(abiasl, abiash)),
                                                         sliderInput('ath', "log10 of theta",
-                                                                    min=-4, max = 1, step = 0.05,
+                                                                    min=.sliderRanges$thMin, max = .sliderRanges$thMax, step = 0.05,
                                                                     value=c(athl, athh)),
                                                         sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
-                                                                    min=1, max =2000,
+                                                                    min=.sliderRanges$gsMin, max = .sliderRanges$gsMax,
                                                                     value=c(agsl, agsh))
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Allopolyploids only, adjst sub-genome split time"),
                                                         sliderInput('adiv', 'T (in units of 2Ne)',
-                                                                    min=0.001, max=100,
+                                                                    min=.sliderRanges$divMin, max=.sliderRanges$divMax,
                                                                     value=c(adivl, adivh))
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Proportion of genome that is allopolyploid"),
                                                         sliderInput('apallo', 'p-allo',
-                                                                    min=0.0, max=1.0,
+                                                                    min=.sliderRanges$palloMin, max=.sliderRanges$palloMax,
                                                                     value=c(apallol, apalloh))
                                               ))
 
@@ -238,6 +279,9 @@ tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
                     )
 
 )
+}
+
+
 
 # function ####
 
@@ -253,15 +297,16 @@ tet.ui <- fluidPage(titlePanel("Tetmer v2.1.1"),
 tetmer <- function(sp){
   #.sp <<- sp
   .spec <<- prepare.spectrum(sp)
-  shinyApp(ui = tet.ui, server = tet.server)
+  #shinyApp(ui = tet.ui, server = tet.server)
+  shinyApp(ui = makeUI(), server = tet.server)
 }
 
 #' A named k-mer spectrum class
 #'
 #' @slot name A string indicating the name of the spectrum (or sample)
 #'
-#' @slot data A `data.frame` with numeric cloumns mult and count.
-#' @slot k A `numeric` indiciating the k-mer length.
+#' @slot data A `data.frame` with numeric columns `mult` and `count`.
+#' @slot k A `numeric` indicating the k-mer length.
 #'
 #' @export
 setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
@@ -1302,3 +1347,85 @@ getProbs <- function(input){
   }
 }
 
+#' @export
+sliderRanges <- function(){
+  return(.sliderRanges)
+}
+
+
+#' @export
+setSliderRanges <- function(x){
+  assignInMyNamespace(".sliderRanges", x)
+}
+
+
+#' @export
+allowSegTet <- function(){
+
+    assignInMyNamespace("modelClasses",
+    list("Diploid" = "d",
+         "Triploid (aaa)" = "traaa",
+         "Triploid (aab)" = "traab",
+         "Tetraploid (aaaa)" = "tau",
+         "Tetraploid (aabb)" = "tal",
+         "Tetraploid (seg.)" = "tse"
+    )
+    )
+}
+
+#' @export
+makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
+  input <- params
+  input$mod <- modelType
+  probs <<- getProbs(input)
+  factors <<- getFactors(input)
+
+
+    if(modelType %in% c("d", "tau", "traaa")){
+      # fit within range
+      points(input$axrange[1]:input$axrange[2],
+             colSums(eval(probs, envir = list(txmin=input$axrange[1], txmax=input$axrange[2], tkcov=optimised$par[1], tbias=optimised$par[2])) *
+                       eval(factors, envir=list(tth=optimised$par[3])))*optimised$par[4]*1000000,
+             col="red", type = 'l', lty=1, lwd=2
+      )
+
+    }
+    if(modelType %in% c("tal", "traab")){
+      points(input$axrange[1]:input$axrange[2],
+             colSums(eval(probs,
+                          envir = list(txmin=input$axrange[1],
+                                       txmax=input$axrange[2],
+                                       tkcov=optimised$par[1],
+                                       tbias=optimised$par[2]
+                          )) *
+                       eval(factors,
+                            envir=list(tth=optimised$par[3],
+                                       tdiverg=optimised$par[5]))
+             )*optimised$par[4]*1000000,
+             col="red", type = 'l', lty=1, lwd=2
+
+      )
+    }
+    if(modelType == "tse"){
+      points(input$axrange[1]:input$axrange[2],
+             colSums(eval(probs,
+                          envir = list(txmin=input$axrange[1],
+                                       txmax=input$axrange[2],
+                                       tkcov=optimised$par[1],
+                                       tbias=optimised$par[2]
+                          )) *
+                       eval(factors,
+                            envir=list(tth=optimised$par[3],
+                                       tdiverg=optimised$par[5],
+                                       pal=optimised$par[6]))
+             )*optimised$par[4]*1000000,
+             col="red", type = 'l', lty=1, lwd=2
+
+      )
+    }
+
+  return(new("spectrum",
+             name=nam,
+             data=data.frame(mult=, count=),
+             k=k))
+}
