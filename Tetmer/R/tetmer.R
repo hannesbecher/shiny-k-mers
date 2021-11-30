@@ -181,18 +181,30 @@ tet.server <- function(input, output) {
 
 
 makeUI <- function(){
-  fluidPage(titlePanel("Tetmer v2.1.1"),
+  fluidPage(titlePanel("Tetmer v2.2.0"),
                     "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
                       column(4,
                              verbatimTextOutput("outText"),
-                             fluidRow(actionButton("saveFit", "Save fit"),
-                                      actionButton("saveFitAs", "Save fit as..."),
-                                      numericInput("kVal", "k-mer size (only for Drag'n'Drop)", 0),
-                                      fileInput("histFile", "Choose or drop spectrum file"))
+
                       )
                     ),
+            fluidRow(
+              column(4,
+                     numericInput("kVal", "Specify k-mer size before loading data", .spec@k)
+              ),
+              column(4,
+                     fileInput("histFile", "Choose or drop spectrum file")
+              ),
+              column(4,
+                     fluidRow(
+                       actionButton("saveFit", "Save fit", icon=icon("save")),
+                       actionButton("saveFitAs", "Save fit as...", icon=icon("save"))
+                     )
+              )
+
+            ),
                     fluidRow(
                       column(3,
 
@@ -294,7 +306,7 @@ makeUI <- function(){
 #'
 #' @examples \dontrun{tetmer(E028)}
 #' \dontrun{tetmer(E030)}
-tetmer <- function(sp){
+tetmer <- function(sp=E028){
   #.sp <<- sp
   .spec <<- prepare.spectrum(sp)
   #shinyApp(ui = tet.ui, server = tet.server)
@@ -337,15 +349,18 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 read.spectrum <- function(f,
                           nam="MySpectrum",
                           k=0,
+                          cropAt=1000,
                           ...){
-  sp = read.table(f, ...)
+  sp <- read.table(f, ...)
+  sp <- sp[sp[,1] <= cropAt,]
   names(sp) = c("mult", "count")
-  return(new("spectrum",
+  spc <- new("spectrum",
              name=nam,
              data=sp,
              k=k
   )
-  )
+  return(prepare.spectrum(spc))
+
 }
 
 
@@ -473,7 +488,7 @@ plotSpecApp <- function(input, spec){
            lwd=c(1, 2, 2, 2),
            lty=c(0, 1, 2, 1),
            pch=c(1, NA, NA, NA),
-           legend=c("Data", "Fit", "Extrapolation", "Contaminations"))
+           legend=c("Data", "Fit", "Extrap.", "Contam."))
 
   }
 
@@ -714,7 +729,7 @@ pointsContam <- function(input, optimised, spect){
            type = 'l', col = 4, lwd=2
     )
   }
-  if(input$mod == "se"){
+  if(input$mod == "tse"){
 
     points(1:input$axrange[1],
            spect@data[1:input$axrange[1], 2] -
@@ -1131,18 +1146,22 @@ textOut <- function(input, optimised){
 prepare.spectrum <- function(spe){
   sp <- spe
   # cut off first row if 0-based spectrum
-
-  if(sp@data[1,1] == 0) {
-    # print("Cutting off multiplicity zero.")
-    sp@data <- sp@data[2:nrow(sp@data),]
-  }
-  # add lines if spectrum starts with multiplicity > 1
-  offs = sp@data[1,1] - 1
-  if(offs > 0){
-    # print("Padding with zeros to fill in lower multiplicities.")
-    prepDF = data.frame(mult=1:offs, count=rep(NA_real_, offs))
-    sp@data <- rbind(prepDF, sp@data)
-  }
+#
+#   if(sp@data[1,1] == 0) {
+#     # print("Cutting off multiplicity zero.")
+#     sp@data <- sp@data[2:nrow(sp@data),]
+#   }
+#   # add lines if spectrum starts with multiplicity > 1
+#   offs = sp@data[1,1] - 1
+#   if(offs > 0){
+#     # print("Padding with zeros to fill in lower multiplicities.")
+#     prepDF = data.frame(mult=1:offs, count=rep(NA_real_, offs))
+#     sp@data <- rbind(prepDF, sp@data)
+#   }
+  maxMult <- sp@data[nrow(sp@data), 1]
+  allMults <- data.frame(mult=1:maxMult)
+  sp@data <- merge(allMults, sp@data, on="mult", all.x=T)
+  sp@data[is.na(sp@data[, 2]), 2] <- 0
   return(sp)
 }
 
@@ -1374,7 +1393,7 @@ allowSegTet <- function(){
 }
 
 #' @export
-makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
+makeExpectedSpectrum <- function(params, modelType, nam="", k=0){ # needs work!
   input <- params
   input$mod <- modelType
   probs <<- getProbs(input)

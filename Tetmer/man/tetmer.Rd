@@ -4,7 +4,7 @@
 \alias{tetmer}
 \title{Run the interactive Tetmer app}
 \usage{
-tetmer(sp)
+tetmer(sp = E028)
 }
 \arguments{
 \item{sp}{A \code{spectrum} object as generate by \code{read.spectrum}.}

@@ -4,7 +4,7 @@
 \alias{read.spectrum}
 \title{Read in a k-mer spectrum}
 \usage{
-read.spectrum(f, nam = "MySpectrum", k = 0, ...)
+read.spectrum(f, nam = "MySpectrum", k = 0, cropAt = 1000, ...)
 }
 \arguments{
 \item{f}{A string indicating the path to th spectrum file}
