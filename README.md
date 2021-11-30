@@ -2,18 +2,20 @@
 
 *plus autotetraploids, triploids, and diploids
 
-Tetmer is an R pacakge relying on the R base package and shiny for visualisation. It was originally developed for the paper “Maintenance of species differences in closely related tetraploid parasitic *Euphrasia* (Orobanchaceae) on an isolated island” by [Becher et al. 2020 *Plant Communications*](https://doi.org/10.1016/j.xplc.2020.100105). The equations for the k-mer patterns were derived using the bSFS approach by Lohse et al. (2011, 2016).
+Tetmer is an R package for fitting population genetic models to (and the visualisation of) k-mer spectra. Besides base R, only the shiny library is required. Tetmer was originally developed for the paper “Maintenance of species differences in closely related tetraploid parasitic *Euphrasia* (Orobanchaceae) on an isolated island” by [Becher et al. 2020 *Plant Communications*](https://doi.org/10.1016/j.xplc.2020.100105). The equations for the k-mer patterns were derived using the bSFS approach by Lohse et al. (2011, 2016).
 
+## Video on the background
+There's a [video on Youtube](https://youtu.be/lk2bTe_zAtE) of Hannes Becher talking about k-mer spectra and Tetmer.
 
 ## Setup
-1.	Download the [latest release here](https://github.com/hannesbecher/shiny-k-mers/releases/download/v2.1.0/Tetmer_2.1.0.tar.gz).
-2.	Open Rstudio and run `install.packages("path/to/Tetmer_2.1.0.tar.gz", repo=NULL)`.
-3.	To see if it works run `library(Tetmer)` and then `tetmer(E028)`. An interactive window should pop up.
+1.	Download the [latest release here](https://github.com/hannesbecher/shiny-k-mers/releases/download/v2.2.0/Tetmer_2.2.0.tar.gz).
+2.	Open Rstudio and run `install.packages("path/to/Tetmer_2.2.0.tar.gz", repo=NULL)`.
+3.	To see if it works run `library(Tetmer)` and then `tetmer()`. An interactive window should pop up.
 
 ## Using Tetmer (brief)
 To use the interactive app, do this:
 1.	Load the Tetmer package `library(Tetmer)`
-2.	Import your data: `mySpec = read.spectrum("path/to/mySpectrumTextFile", "myCustomNameForPlotting")`
+2.	Import your data: `mySpec = read.spectrum("path/to/mySpectrumTextFile", "myCustomNameForPlotting", [optional: integer-valued k-mer size])`
 3.	Run the Tetmer app: `tetmer(mySpec)`
 
 
