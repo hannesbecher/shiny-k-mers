@@ -4,7 +4,7 @@
 \alias{read.spectrum}
 \title{Read in a k-mer spectrum}
 \usage{
-read.spectrum(f, nam = "MySpectrum", k = 0, ...)
+read.spectrum(f, nam = "MySpectrum", k = 0, cropAt = 1000, ...)
 }
 \arguments{
 \item{f}{A string indicating the path to th spectrum file}
@@ -23,10 +23,10 @@ k-mer spectrum
 Uses \code{read.table()} to read in a k-mer spectrum.
 }
 \examples{
-testdf <- data.frame(mult=1:100, count = 100:1)
-tf <- tempfile()
-write.table(testdf, tf)
-sp <- read.spectrum(tf, nam = "Test spectrum")
-unlink(tf)
-plot(sp)
+\dontrun{testdf <- data.frame(mult=1:100, count = 100:1)}
+\dontrun{tf <- tempfile()}
+\dontrun{write.table(testdf, tf)}
+\dontrun{sp <- read.spectrum(tf, nam = "Test spectrum")}
+\dontrun{unlink(tf)}
+\dontrun{plot(sp)}
 }

@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+Tetmer*tar.gz
+.DS_Store
+Tetmer.Rcheck/*

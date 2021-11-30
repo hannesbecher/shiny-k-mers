@@ -1,4 +1,4 @@
-# Descriptioins of the data sets.
+# Descriptions of the data sets.
 
 #' K-mer spectrum of \emph{Euphrasia arctica} individual E028
 #'
