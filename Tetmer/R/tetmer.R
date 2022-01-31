@@ -361,7 +361,7 @@ read.spectrum <- function(f,
              data=sp,
              k=k
   )
-  if(no0==T) {
+  if(no0==F) {
     return(prepare.spectrum(spc))
   } else {
       return(spc)
