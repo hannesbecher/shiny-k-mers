@@ -331,8 +331,8 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #'
 #'
 #' @param f A string indicating the path to th spectrum file
-#' @param nam (otional) A string indicating the name of the spectrum
-#' @param k (otional) A numeric indicating the k-mer length
+#' @param nam (optional) A string indicating the name of the spectrum
+#' @param k (optional) A numeric indicating the k-mer length
 #' @param no0 (optional) A logical value indicating whether the function `prepare.spectrum()` is run on the data (which inserts zero lines)
 #' @param ... keyword arguments to be passed to `read.table()`
 #' @return A two-element list comprising a names string and a two-column data frame of the
