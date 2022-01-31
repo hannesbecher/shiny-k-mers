@@ -333,6 +333,7 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #' @param f A string indicating the path to th spectrum file
 #' @param nam (otional) A string indicating the name of the spectrum
 #' @param k (otional) A numeric indicating the k-mer length
+#' @param no0 (optional) A logical value indicating whether the function `prepare.spectrum()` is run on the data (which inserts zero lines)
 #' @param ... keyword arguments to be passed to `read.table()`
 #' @return A two-element list comprising a names string and a two-column data frame of the
 #' k-mer spectrum
@@ -350,6 +351,7 @@ read.spectrum <- function(f,
                           nam="MySpectrum",
                           k=0,
                           cropAt=1000,
+                          no0=F,
                           ...){
   sp <- read.table(f, ...)
   sp <- sp[sp[,1] <= cropAt,]
@@ -359,7 +361,11 @@ read.spectrum <- function(f,
              data=sp,
              k=k
   )
-  return(prepare.spectrum(spc))
+  if(no0==T) {
+    return(prepare.spectrum(spc))
+  } else {
+      return(spc)
+    }
 
 }
 
