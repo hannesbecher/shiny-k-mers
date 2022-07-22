@@ -181,7 +181,7 @@ tet.server <- function(input, output) {
 
 
 makeUI <- function(){
-  fluidPage(titlePanel("Tetmer v2.2.0"),
+  fluidPage(titlePanel("Tetmer v2.3.0"),
                     "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
