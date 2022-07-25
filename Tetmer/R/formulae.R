@@ -1,19 +1,20 @@
 probsDip <- expression(rbind(
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 1),
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 2)
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 1),
+  #dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 2)
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 2)
 ))
 
 probsTri <- expression(rbind(
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 1),
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 2),
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 3)
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 1),
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 2),
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 3)
 ))
 
 probsTet <- expression(rbind(
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 1),
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 2),
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 3),
-  dnbinom(txmin:txmax, tkcov/tbias, mu = tkcov * 4)
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 1),
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 2),
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 3),
+  dnbinom(txmin:txmax, 1/10^tbias, mu = tkcov * 4)
 ))
 
 
