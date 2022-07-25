@@ -8,8 +8,8 @@ Tetmer is an R package for fitting population genetic models to (and the visuali
 There's a [video on Youtube](https://youtu.be/lk2bTe_zAtE) of Hannes Becher talking about k-mer spectra and Tetmer.
 
 ## Setup
-1.	Download the [latest release here](https://github.com/hannesbecher/shiny-k-mers/releases/download/v2.2.1/Tetmer_2.2.1.tar.gz).
-2.	Open Rstudio and run `install.packages("path/to/Tetmer_2.2.1.tar.gz", repo=NULL)`.
+1.	Download the [latest release here](https://github.com/hannesbecher/shiny-k-mers/releases/download/v2.3.0/Tetmer_2.3.0.tar.gz).
+2.	Open Rstudio and run `install.packages("path/to/Tetmer_[VERSION].tar.gz", repo=NULL)`.
 3.	To see if it works run `library(Tetmer)` and then `tetmer()`. An interactive window should pop up.
 
 ## Using Tetmer (brief)
