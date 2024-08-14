@@ -13,12 +13,12 @@ pallo <- 0
 
 # starting ranges for auto fitting ####
 
-agsl <- 1
-agsh <- 2000
+agsl <- 6
+agsh <- 9
 akcovl <- 10
 akcovh <- 100
-abiasl <- 0.1
-abiash <- 3
+abiasl <- -3
+abiash <- -1
 athl <- -2
 athh <- 0.6
 adivl <- 0.1
@@ -28,12 +28,12 @@ axrangeh <- 200
 apallol <- 0.01
 apalloh <- 0.99
 
-.sliderRanges <-list(gsMin=1,
-                     gsMax=2000,
+.sliderRanges <-list(gsMin=3,
+                     gsMax=10,
                      kcovMin=5,
                      kcovMax=300,
-                     biasMin=0.01,
-                     biasMax=4,
+                     biasMin=-6,
+                     biasMax=2,
                      thMin=-4,
                      thMax=1,
                      divMin=0.001,
@@ -42,7 +42,7 @@ apalloh <- 0.99
                      xrangeMax=500,
                      palloMin=0,
                      palloMax=1,
-                     ymax=30)
+                     ymax=2)
 
 
 modelClasses <-
@@ -181,7 +181,7 @@ tet.server <- function(input, output) {
 
 
 makeUI <- function(){
-  fluidPage(titlePanel("Tetmer v2.2.0"),
+  fluidPage(titlePanel("Tetmer v2.3.0"),
                     "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
@@ -253,8 +253,8 @@ makeUI <- function(){
                                                                     min=.sliderRanges$xrangeMin, max = .sliderRanges$xrangeMax,
                                                                     value=c(axrangel,axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
-                                                                    min=0, max = .sliderRanges$ymax,
-                                                                    value=10)
+                                                                    min=-2, max = .sliderRanges$ymax,
+                                                                    value=1, step = 0.1)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'auto'",
@@ -265,7 +265,7 @@ makeUI <- function(){
                                                                     value=c(akcovl, akcovh)),
                                                         sliderInput('abias', 'Peak width',
                                                                     min=.sliderRanges$biasMin, max = .sliderRanges$biasMax,
-                                                                    value=c(abiasl, abiash)),
+                                                                    value=c(abiasl, abiash), step = 0.1),
                                                         sliderInput('ath', "log10 of theta",
                                                                     min=.sliderRanges$thMin, max = .sliderRanges$thMax, step = 0.05,
                                                                     value=c(athl, athh)),
@@ -331,8 +331,9 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #'
 #'
 #' @param f A string indicating the path to th spectrum file
-#' @param nam (otional) A string indicating the name of the spectrum
-#' @param k (otional) A numeric indicating the k-mer length
+#' @param nam (optional) A string indicating the name of the spectrum
+#' @param k (optional) A numeric indicating the k-mer length
+#' @param no0 (optional) A logical value indicating whether the function `prepare.spectrum()` is run on the data (which inserts zero lines)
 #' @param ... keyword arguments to be passed to `read.table()`
 #' @return A two-element list comprising a names string and a two-column data frame of the
 #' k-mer spectrum
@@ -350,6 +351,7 @@ read.spectrum <- function(f,
                           nam="MySpectrum",
                           k=0,
                           cropAt=1000,
+                          no0=F,
                           ...){
   sp <- read.table(f, ...)
   sp <- sp[sp[,1] <= cropAt,]
@@ -359,7 +361,11 @@ read.spectrum <- function(f,
              data=sp,
              k=k
   )
-  return(prepare.spectrum(spc))
+  if(no0==F) {
+    return(prepare.spectrum(spc))
+  } else {
+      return(spc)
+    }
 
 }
 
@@ -427,22 +433,22 @@ addvertlines <- function(input, optimised=0){
   if(input$fitmod=="auto"){
     if(input$mod=="d"){
       abline(v=c(1,2)*optimised$par[1], lty=2,col="grey")
-      text(optimised$par[1], input$ymax*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par[1]*2, input$ymax*.7*1000000, "2x", col="grey", cex=4)
+      text(optimised$par[1], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
+      text(optimised$par[1]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
     }
     if(input$mod%in%c("traaa", "traab")){
       abline(v=c(1,2,3)*optimised$par[1], lty=2,col="grey")
-      text(optimised$par[1], input$ymax*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par[1]*2, input$ymax*.7*1000000, "2x", col="grey", cex=4)
-      text(optimised$par[1]*3, input$ymax*.7*1000000, "3x", col="grey", cex=4)
+      text(optimised$par[1], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
+      text(optimised$par[1]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
+      text(optimised$par[1]*3, (10^input$ymax)*.7*1000000, "3x", col="grey", cex=4)
 
     }
     if(input$mod%in%c("tau", "tal", "tse")){
       abline(v=c(1,2,3,4)*optimised$par[1], lty=2,col="grey")
-      text(optimised$par[1], input$ymax*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par[1]*2, input$ymax*.7*1000000, "2x", col="grey", cex=4)
-      text(optimised$par[1]*3, input$ymax*.7*1000000, "3x", col="grey", cex=4)
-      text(optimised$par[1]*4, input$ymax*.7*1000000, "4x", col="grey", cex=4)
+      text(optimised$par[1], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
+      text(optimised$par[1]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
+      text(optimised$par[1]*3, (10^input$ymax)*.7*1000000, "3x", col="grey", cex=4)
+      text(optimised$par[1]*4, (10^input$ymax)*.7*1000000, "4x", col="grey", cex=4)
     }
   } # if auto mode
 }
@@ -477,9 +483,9 @@ plotSpecApp <- function(input, spec){
   }
   if(input$fitmod=="auto"){
     if(input$showData){
-      plot(spec, xlim=c(0,input$axrange[2]), ylim=c(0, input$ymax*1000000))
+      plot(spec, xlim=c(0,input$axrange[2]), ylim=c(0, (10^input$ymax)*1000000))
     } else {
-      plot(spec, xlim=c(0,input$axrange[2]), ylim=c(0, input$ymax*1000000),
+      plot(spec, xlim=c(0,input$axrange[2]), ylim=c(0, (10^input$ymax)*1000000),
            type = 'n')
     }
     abline(v=input$axrange)
@@ -1159,6 +1165,7 @@ prepare.spectrum <- function(spe){
 #     sp@data <- rbind(prepDF, sp@data)
 #   }
   maxMult <- sp@data[nrow(sp@data), 1]
+  if(maxMult < 500) maxMult <- 500
   allMults <- data.frame(mult=1:maxMult)
   sp@data <- merge(allMults, sp@data, on="mult", all.x=T)
   sp@data[is.na(sp@data[, 2]), 2] <- 0
@@ -1245,7 +1252,7 @@ getStartingVals <- function(input){
         cov=(input$akcov[1]+input$akcov[2])/2,
         bias=(input$abias[1]+input$abias[2])/2,
         theta=(10^input$ath[1]+10^input$ath[2])/2,
-        haplSize=(input$ayadj[1]+input$ayadj[2])/2
+        haplSize=(10^((input$ayadj[1]-6))+10^((input$ayadj[2]-6)))/2
       )
     )
   }
@@ -1256,7 +1263,7 @@ getStartingVals <- function(input){
         cov=(input$akcov[1]+input$akcov[2])/2,
         bias=(input$abias[1]+input$abias[2])/2,
         theta=(10^input$ath[1]+10^input$ath[2])/2,
-        haplSize=(input$ayadj[1]+input$ayadj[2])/2,
+        haplSize=(10^(input$ayadj[1]-6)+10^(input$ayadj[2]-6))/2,
         diverg=(input$adiv[1]+input$adiv[2])/2
       )
     )
@@ -1268,7 +1275,7 @@ getStartingVals <- function(input){
         cov=(input$akcov[1]+input$akcov[2])/2,
         bias=(input$abias[1]+input$abias[2])/2,
         theta=(10^input$ath[1]+10^input$ath[2])/2,
-        haplSize=(input$ayadj[1]+input$ayadj[2])/2,
+        haplSize=(10^(input$ayadj[1]-6)+10^(input$ayadj[2]-6))/2,
         diverg=(input$adiv[1]+input$adiv[2])/2,
         pallo=(input$apallo[1]+input$apallo[2])/2
       )
@@ -1282,8 +1289,8 @@ doOptimisation <- function(input, sp){
     return(
       optim(startingVals, # starting values (vector of)
             minFun,
-            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], input$ayadj[1], input$adiv[1]),
-            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], input$ayadj[2], input$adiv[2]),
+            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1]),
+            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2]),
             xlimits=c(input$axrange[1],input$axrange[2]),
             spec=sp,
             method = "L-BFGS-B"
@@ -1296,8 +1303,8 @@ doOptimisation <- function(input, sp){
     return(
       optim(startingVals, # starting values (vector of)
             minFun,
-            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], input$ayadj[1], input$adiv[1], input$apallo[1]),
-            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], input$ayadj[2], input$adiv[2], input$apallo[2]),
+            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1]),
+            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2]),
             xlimits=c(input$axrange[1],input$axrange[2]),
             spec=sp,
             method = "L-BFGS-B"
@@ -1309,8 +1316,8 @@ doOptimisation <- function(input, sp){
     return(
       optim(startingVals, # starting values (vector of)
             minFun,
-            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], input$ayadj[1]),
-            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], input$ayadj[2]),
+            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6)),
+            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6)),
             xlimits=c(input$axrange[1],input$axrange[2]),
             spec = sp,
             method = "L-BFGS-B"

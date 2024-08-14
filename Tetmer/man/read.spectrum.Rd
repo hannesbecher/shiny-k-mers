@@ -4,7 +4,7 @@
 \alias{read.spectrum}
 \title{Read in a k-mer spectrum}
 \usage{
-read.spectrum(f, nam = "MySpectrum", k = 0, cropAt = 1000, ...)
+read.spectrum(f, nam = "MySpectrum", k = 0, cropAt = 1000, no0 = F, ...)
 }
 \arguments{
 \item{f}{A string indicating the path to th spectrum file}
@@ -12,6 +12,8 @@ read.spectrum(f, nam = "MySpectrum", k = 0, cropAt = 1000, ...)
 \item{nam}{(otional) A string indicating the name of the spectrum}
 
 \item{k}{(otional) A numeric indicating the k-mer length}
+
+\item{no0}{(optional) A logical value indicating whether the function \code{prepare.spectrum()} is run on the data (which inserts zero lines)}
 
 \item{...}{keyword arguments to be passed to \code{read.table()}}
 }
