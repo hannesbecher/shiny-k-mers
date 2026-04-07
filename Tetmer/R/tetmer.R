@@ -5,7 +5,7 @@ txmax <- 200
 txmin <- 5
 tymax <- 10000
 tkcov <- 15
-tbias <- 0.5
+tbias <- -1.8
 tth <- 0.04
 tyadj <- 200
 tdiverg <- 30
@@ -17,13 +17,13 @@ agsl <- 6
 agsh <- 9
 akcovl <- 10
 akcovh <- 100
-abiasl <- -3
-abiash <- -1
+abiasl <- -5
+abiash <- -3
 athl <- -2
 athh <- 0.6
 adivl <- 0.1
 adivh <- 100
-axrangel <- 5
+axrangel <- 45
 axrangeh <- 200
 apallol <- 0.01
 apalloh <- 0.99
@@ -181,7 +181,7 @@ tet.server <- function(input, output) {
 
 
 makeUI <- function(){
-  fluidPage(titlePanel("Tetmer v2.3.0"),
+  fluidPage(titlePanel("Tetmer v2.3.1"),
                     "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
