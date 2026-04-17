@@ -330,11 +330,16 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #' Uses `read.table()` to read in a k-mer spectrum.
 #'
 #'
-#' @param f A string indicating the path to th spectrum file
+#' @param f A string indicating the path to the spectrum file
 #' @param nam (optional) A string indicating the name of the spectrum
 #' @param k (optional) A numeric indicating the k-mer length
-#' @param no0 (optional) A logical value indicating whether the function `prepare.spectrum()` is run on the data (which inserts zero lines)
-#' @param ... keyword arguments to be passed to `read.table()`
+#' @param cropAt (optional) An integer specifying the maximum multiplicity 
+#'   value to retain. K-mers with multiplicity above this value are 
+#'   discarded. Defaults to 1000.
+#' @param no0 (optional) A logical value. If \code{FALSE} (default), 
+#'   \code{prepare.spectrum} is run on the data to insert missing 
+#'   multiplicity values. If \code{TRUE}, this step is skipped.
+#' @param ... keyword arguments to be passed to \code{read.table}
 #' @return A two-element list comprising a names string and a two-column data frame of the
 #' k-mer spectrum
 #' @export
@@ -351,7 +356,7 @@ read.spectrum <- function(f,
                           nam="MySpectrum",
                           k=0,
                           cropAt=1000,
-                          no0=F,
+                          no0=FALSE,
                           ...){
   sp <- read.table(f, ...)
   sp <- sp[sp[,1] <= cropAt,]
@@ -361,7 +366,7 @@ read.spectrum <- function(f,
              data=sp,
              k=k
   )
-  if(no0==F) {
+  if(no0==FALSE) {
     return(prepare.spectrum(spc))
   } else {
       return(spc)
@@ -1167,7 +1172,7 @@ prepare.spectrum <- function(spe){
   maxMult <- sp@data[nrow(sp@data), 1]
   if(maxMult < 500) maxMult <- 500
   allMults <- data.frame(mult=1:maxMult)
-  sp@data <- merge(allMults, sp@data, on="mult", all.x=T)
+  sp@data <- merge(allMults, sp@data, on="mult", all.x=TRUE)
   sp@data[is.na(sp@data[, 2]), 2] <- 0
   return(sp)
 }
@@ -1373,19 +1378,41 @@ getProbs <- function(input){
   }
 }
 
+#' Get slider ranges for Tetmer UI
+#'
+#' Returns the current slider range settings used to initialise the 
+#' Tetmer Shiny interface. These can be modified using 
+#' \code{setSliderRanges} before launching the app.
+#'
+#' @return A named list of slider range values
 #' @export
+#' @examples
+#' sliderRanges()
 sliderRanges <- function(){
   return(.sliderRanges)
 }
 
-
+#' Set slider ranges for Tetmer UI
+#'
+#' Updates the slider range settings used to initialise the Tetmer 
+#' Shiny interface. Call this before \code{tetmer()} to customise 
+#' the parameter ranges for your data.
+#'
+#' @param x A named list of slider range values in the same format 
+#'   as returned by \code{sliderRanges}
+#' @return NULL, invisibly
 #' @export
+#' @examples
+#' \dontrun{
+#' ranges <- sliderRanges()
+#' ranges$kcovMax <- 500
+#' setSliderRanges(ranges)
+#' }
 setSliderRanges <- function(x){
   assignInMyNamespace(".sliderRanges", x)
 }
 
-
-#' @export
+#' @keywords internal
 allowSegTet <- function(){
 
     assignInMyNamespace("modelClasses",
@@ -1399,7 +1426,7 @@ allowSegTet <- function(){
     )
 }
 
-#' @export
+#' @keywords internal
 makeExpectedSpectrum <- function(params, modelType, nam="", k=0){ # needs work!
   input <- params
   input$mod <- modelType
