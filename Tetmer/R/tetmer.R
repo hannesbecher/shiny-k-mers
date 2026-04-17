@@ -5,7 +5,7 @@ txmax <- 200
 txmin <- 5
 tymax <- 10000
 tkcov <- 15
-tbias <- 0.5
+tbias <- -1.8
 tth <- 0.04
 tyadj <- 200
 tdiverg <- 30
@@ -17,13 +17,13 @@ agsl <- 6
 agsh <- 9
 akcovl <- 10
 akcovh <- 100
-abiasl <- -3
-abiash <- -1
+abiasl <- -5
+abiash <- -3
 athl <- -2
 athh <- 0.6
 adivl <- 0.1
 adivh <- 100
-axrangel <- 5
+axrangel <- 45
 axrangeh <- 200
 apallol <- 0.01
 apalloh <- 0.99
@@ -181,7 +181,7 @@ tet.server <- function(input, output) {
 
 
 makeUI <- function(){
-  fluidPage(titlePanel("Tetmer v2.3.0"),
+  fluidPage(titlePanel("Tetmer v2.3.1"),
                     "Fitting population paramters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
                       column(8, plotOutput('plot')),
@@ -870,7 +870,7 @@ textOut <- function(input, optimised){
             "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
             "\n                    T:", round(optimised$par[5],2),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
             "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
             "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/.spec@k, 4),
             "\n\nSTARTING RANGES (MIN MAX)",
@@ -893,7 +893,7 @@ textOut <- function(input, optimised){
             "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
             "\n                    T:", round(optimised$par[5],2),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
             "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
             "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/.spec@k, 4),
             "\n       prop. allotet.:", round(optimised$par[6], 2),
@@ -918,7 +918,7 @@ textOut <- function(input, optimised){
             "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
             "\n                    T:", round(optimised$par[5],2),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
             "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
             "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/.spec@k, 4),
             "\n\nSTARTING RANGES (MIN MAX)",
@@ -940,7 +940,7 @@ textOut <- function(input, optimised){
             "\n      theta per k-mer:", round(optimised$par[3],4),
             "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
             "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
@@ -959,7 +959,7 @@ textOut <- function(input, optimised){
             "\n      theta per k-mer:", round(optimised$par[3],4),
             "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
             "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
@@ -978,7 +978,7 @@ textOut <- function(input, optimised){
             "\n      theta per k-mer:", round(optimised$par[3],4),
             "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
             "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-            "\n    bias (peak width):", round(optimised$par[2],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
             "\n\nSTARTING RANGES (MIN MAX)",
             "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
             "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
@@ -1059,7 +1059,7 @@ textOut <- function(input, optimised){
           "\n      theta per k-mer:", round(optimised$par[3],4),
           "\n                    T:", round(optimised$par[5],2),
           "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
           "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
@@ -1079,7 +1079,7 @@ textOut <- function(input, optimised){
           "\n      theta per k-mer:", round(optimised$par[3],4),
           "\n                    T:", round(optimised$par[5],2),
           "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
           "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
@@ -1098,7 +1098,7 @@ textOut <- function(input, optimised){
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n      theta per k-mer:", round(optimised$par[3],4),
           "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
@@ -1115,7 +1115,7 @@ textOut <- function(input, optimised){
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n      theta per k-mer:", round(optimised$par[3],4),
           "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
@@ -1132,7 +1132,7 @@ textOut <- function(input, optimised){
           "\n  monoploid k-mer cov:", round(optimised$par[1],1),
           "\n      theta per k-mer:", round(optimised$par[3],4),
           "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
           "\n\nSTARTING RANGES (MIN MAX)",
           "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
           "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
