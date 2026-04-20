@@ -4,15 +4,19 @@
 \alias{makeMinFun}
 \title{Generate a function to be minimised}
 \usage{
-makeMinFun(input)
+makeMinFun(input, probs, factors)
 }
 \arguments{
 \item{input}{Input from GUI (contains model, parameter ranges, etc.)}
+
+\item{probs}{Expression for k-mer spectrum peak shapes}
+
+\item{factors}{Expression for k-mer spectrum peak factors}
 }
 \value{
-A function servoing as input to \code{optim}
+A function serving as input to \code{optim}
 }
 \description{
-This is then mimimised by \code{optim}.
+This is then minimised by \code{optim}.
 }
 \keyword{internal}

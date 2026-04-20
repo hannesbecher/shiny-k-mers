@@ -4,12 +4,14 @@
 \alias{textOut}
 \title{Generate text for Tetmer window}
 \usage{
-textOut(input, optimised)
+textOut(input, optimised, spec)
 }
 \arguments{
 \item{input}{Input from the GUI (contains plotting range, model, etc.)}
 
 \item{optimised}{Fitted values from \code{optim}.}
+
+\item{spec}{The current \code{spectrum} object.}
 }
 \value{
 A string of the fitted parameters produced by \code{renderText()}

@@ -24,8 +24,7 @@ multiplicity values. If \code{TRUE}, this step is skipped.}
 \item{...}{keyword arguments to be passed to \code{read.table}}
 }
 \value{
-A two-element list comprising a names string and a two-column data frame of the
-k-mer spectrum
+A \code{spectrum} object
 }
 \description{
 Uses \code{read.table()} to read in a k-mer spectrum.

@@ -4,12 +4,16 @@
 \alias{pointsFit}
 \title{Plot the fit}
 \usage{
-pointsFit(input, optimised = 0)
+pointsFit(input, optimised = 0, probs, factors)
 }
 \arguments{
 \item{input}{From GUI}
 
 \item{optimised}{From fit (only supplied in auto mode)}
+
+\item{probs}{Expression for k-mer spectrum peak shapes}
+
+\item{factors}{Expression for k-mer spectrum peak factors}
 }
 \description{
 Plot the fit
