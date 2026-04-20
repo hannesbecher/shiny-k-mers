@@ -10,7 +10,7 @@ Authors@R: c(
            role = "ctb"))
 Description: A shiny app for fitting population parameters to k-mer spectra generated from whole-genome DNA sequencing data.
 License: GPL (>= 3)
-Depends: 
+Depends:
     R (>= 2.10)
 Imports: shiny, graphics, methods, utils, stats
 Encoding: UTF-8

@@ -151,9 +151,6 @@ tet.server <- function(input, output) {
 
 # User interface ####
 
-
-
-
 makeUI <- function(spec){
   fluidPage(titlePanel("Tetmer v2.3.2"),
                     "Fitting population parameters to k-mer spectra (by Hannes Becher)",
@@ -705,6 +702,7 @@ textOut <- function(input, optimised, spec){
     } # if man
     if(input$fitmod == "auto"){
       if(input$mod=="tal"){
+<<<<<<< HEAD
         return(paste(
           "ALLOTETRAPLOID MODEL, AUTO FITTED",
           "\n         k-mer length:", spec@k,
@@ -820,6 +818,135 @@ textOut <- function(input, optimised, spec){
           "\n              x range:", input$axrange[1], input$axrange[2]
         ))
       }
+=======
+        return(
+          paste(
+            "ALLOTETRAPLOID MODEL, AUTO FITTED",
+            "\n         k-mer length:", .spec@k,
+            "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+            "\n      theta per k-mer:", round(optimised$par[3],4),
+            "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
+            "\n                    T:", round(optimised$par[5],2),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
+            "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
+            "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/.spec@k, 4),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+            "\n                    T:", input$adiv[1], input$adiv[2],
+            "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+
+      } # if allotet
+      if(input$mod=="tse"){
+        return(
+          paste(
+            "ALLOTETRAPLOID MODEL, AUTO FITTED",
+            "\n         k-mer length:", .spec@k,
+            "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+            "\n      theta per k-mer:", round(optimised$par[3],4),
+            "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
+            "\n                    T:", round(optimised$par[5],2),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
+            "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
+            "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/.spec@k, 4),
+            "\n       prop. allotet.:", round(optimised$par[6], 2),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+            "\n                    T:", input$adiv[1], input$adiv[2],
+            "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2],
+            "\n       prop. allotet.:", input$apallo[1], input$apallo[2]
+          ))
+
+      } # if allotet
+      if(input$mod=="traab"){
+        return(
+          paste(
+            "ALLOTRIPLOID MODEL, AUTO FITTED",
+            "\n         k-mer length:", .spec@k,
+            "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+            "\n      theta per k-mer:", round(optimised$par[3],4),
+            "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
+            "\n                    T:", round(optimised$par[5],2),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
+            "\n diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
+            "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/.spec@k, 4),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+            "\n                    T:", input$adiv[1], input$adiv[2],
+            "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+
+      } # if allotrip
+      if(input$mod=="tau"){
+        return(
+          paste(
+            "AUTOTETRAPLOID MODEL, AUTO FITTED",
+            "\n         k-mer length:", .spec@k,
+            "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+            "\n      theta per k-mer:", round(optimised$par[3],4),
+            "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+            "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+
+      } # if tau
+      if(input$mod=="traaa"){
+        return(
+          paste(
+            "AUTOTRIPLOID MODEL, AUTO FITTED",
+            "\n         k-mer length:", .spec@k,
+            "\n monoploid k-mer cov:", round(optimised$par[1],1),
+            "\n      theta per k-mer:", round(optimised$par[3],4),
+            "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+            "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+
+      } # if traab
+      if(input$mod=="d"){
+        return(
+          paste(
+            "DIPLOID MODEL, AUTO FITTED",
+            "\n         k-mer length:", .spec@k,
+            "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+            "\n      theta per k-mer:", round(optimised$par[3],4),
+            "\n theta per nucleotide:", round(optimised$par[3] / .spec@k,5),
+            "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+            "\n    bias (peak width):", round(optimised$par[2],3),
+            "\n\nSTARTING RANGES (MIN MAX)",
+            "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+            "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+            "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+            "\n    bias (peak width):", input$abias[1], input$abias[2],
+            "\n              x range:", input$axrange[1],input$axrange[2]
+          ))
+
+      } #if d
+>>>>>>> cf2f9a70a95d4e4486e77e9b04a41d10ced47caa
     } # if auto fit
   } # if k > 0
   # k == 0: no per-nucleotide estimates
@@ -876,6 +1003,7 @@ textOut <- function(input, optimised, spec){
   } # if man
   if(input$fitmod == "auto"){
     if(input$mod=="tal"){
+<<<<<<< HEAD
       return(paste(
         "ALLOTETRAPLOID MODEL, AUTO FITTED",
         "\n  monoploid k-mer cov:", round(optimised$par[1],1),
@@ -956,6 +1084,98 @@ textOut <- function(input, optimised, spec){
         "\n              x range:", input$axrange[1], input$axrange[2]
       ))
     }
+=======
+      return(
+        paste(
+          "ALLOTETRAPLOID MODEL, AUTO FITTED",
+          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+          "\n      theta per k-mer:", round(optimised$par[3],4),
+          "\n                    T:", round(optimised$par[5],2),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
+          "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
+          "\n\nSTARTING RANGES (MIN MAX)",
+          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+          "\n                    T:", input$adiv[1], input$adiv[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n    bias (peak width):", input$abias[1], input$abias[2],
+          "\n              x range:", input$axrange[1],input$axrange[2]
+        ))
+
+    } # if allotet
+    if(input$mod=="traab"){
+      return(
+        paste(
+          "ALLOTRIPLOID MODEL, AUTO FITTED",
+          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+          "\n      theta per k-mer:", round(optimised$par[3],4),
+          "\n                    T:", round(optimised$par[5],2),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
+          "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
+          "\n\nSTARTING RANGES (MIN MAX)",
+          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+          "\n                    T:", input$adiv[1], input$adiv[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n    bias (peak width):", input$abias[1], input$abias[2],
+          "\n              x range:", input$axrange[1],input$axrange[2]
+        ))
+
+    } # if allotrip
+    if(input$mod=="tau"){
+      return(
+        paste(
+          "AUTOTETRAPLOID MODEL, AUTO FITTED",
+          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+          "\n      theta per k-mer:", round(optimised$par[3],4),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
+          "\n\nSTARTING RANGES (MIN MAX)",
+          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n    bias (peak width):", input$abias[1], input$abias[2],
+          "\n              x range:", input$axrange[1],input$axrange[2]
+        ))
+
+    } # if tau
+    if(input$mod=="traaa"){
+      return(
+        paste(
+          "AUTOTRIPLOID MODEL, AUTO FITTED",
+          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+          "\n      theta per k-mer:", round(optimised$par[3],4),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
+          "\n\nSTARTING RANGES (MIN MAX)",
+          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n    bias (peak width):", input$abias[1], input$abias[2],
+          "\n              x range:", input$axrange[1],input$axrange[2]
+        ))
+
+    } # if traab
+    if(input$mod=="d"){
+      return(
+        paste(
+          "DIPLOID MODEL, AUTO FITTED",
+          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
+          "\n      theta per k-mer:", round(optimised$par[3],4),
+          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
+          "\n    bias (peak width):", round(optimised$par[2],3),
+          "\n\nSTARTING RANGES (MIN MAX)",
+          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
+          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
+          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
+          "\n    bias (peak width):", input$abias[1], input$abias[2],
+          "\n              x range:", input$axrange[1],input$axrange[2]
+        ))
+
+    } #if d
+>>>>>>> cf2f9a70a95d4e4486e77e9b04a41d10ced47caa
   } # if auto fit
 }
 
