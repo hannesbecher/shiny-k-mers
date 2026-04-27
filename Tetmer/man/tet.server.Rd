@@ -2,15 +2,15 @@
 % Please edit documentation in R/tetmer.R
 \name{tet.server}
 \alias{tet.server}
-\title{Run the Tetmer app}
+\title{Run the Tetmer app server}
 \usage{
 tet.server(input, output)
 }
 \arguments{
-\item{input}{Default argument fo ar \code{shiny} server function. Leave empty.}
+\item{input}{Default argument for a \code{shiny} server function. Leave empty.}
 
-\item{output}{Default argument fo ar \code{shiny} server function. Leave empty.}
+\item{output}{Default argument for a \code{shiny} server function. Leave empty.}
 }
 \description{
-Run the Tetmer app
+Run the Tetmer app server
 }
