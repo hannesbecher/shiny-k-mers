@@ -1,4 +1,3 @@
-
 name: R-CMD-check
 
 on: [push, pull_request]
@@ -14,19 +13,18 @@ jobs:
       - name: Setup R
         uses: r-lib/actions/setup-r@v2
 
-      # Optional but recommended for packages that need system libs (xml2, curl, openssl, etc.)
       - name: Setup Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
-      # Installs R package dependencies (from DESCRIPTION) and caches them automatically.
       - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          # "check" installs deps needed for R CMD check (Imports, Depends, LinkingTo, Suggests, etc.)
+          working-directory: Tetmer
           extra-packages: any::rcmdcheck
           needs: check
 
       - name: Run R CMD check
         uses: r-lib/actions/check-r-package@v2
         with:
+          working-directory: Tetmer
           upload-snapshots: true
