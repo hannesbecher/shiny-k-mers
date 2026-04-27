@@ -1,3 +1,4 @@
+
 name: R-CMD-check
 
 on: [push, pull_request]
@@ -7,26 +8,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Cache R packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/R
-        key: ${{ runner.os }}-R-${{ hashFiles('**/*.R') }}
-        restore-keys: |
-          ${{ runner.os }}-R-
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
 
-    - name: Setup R
-      uses: r-lib/actions/setup-r@v2
+      # Optional but recommended for packages that need system libs (xml2, curl, openssl, etc.)
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
 
-    - name: Install dependencies
-      shell: Rscript {0}
-      run: |
-        install.packages('renv')
-        renv::restore()
+      # Installs R package dependencies (from DESCRIPTION) and caches them automatically.
+      - name: Install dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          # "check" installs deps needed for R CMD check (Imports, Depends, LinkingTo, Suggests, etc.)
+          extra-packages: any::rcmdcheck
+          needs: check
 
-    - name: Run R CMD check
-      run: R CMD check .
-
+      - name: Run R CMD check
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
