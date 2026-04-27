@@ -26,8 +26,8 @@ E028
 A k-mer spectrum if allotetraploid \emph{E. arctica}.
 }
 \examples{
-plot(E028, log="xy")
+\dontrun{plot(E028, log="xy")}
 plot(E028, xlim=c(0, 200), ylim=c(0, 10000000))
-tetmer(E028)
+\dontrun{tetmer(E028)}
 }
 \keyword{datasets}

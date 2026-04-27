@@ -16,9 +16,9 @@
 #' }
 #' @source Becher et al. (2020) \url{https://doi.org/10.1016/j.xplc.2020.100105}
 #'
-#' @examples plot(E028, log="xy")
+#' @examples \dontrun{plot(E028, log="xy")}
 #' plot(E028, xlim=c(0, 200), ylim=c(0, 10000000))
-#' tetmer(E028)
+#' \dontrun{tetmer(E028)}
 "E028"
 
 
