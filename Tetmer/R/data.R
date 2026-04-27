@@ -41,6 +41,6 @@
 #'
 #' @examples plot(E030, log="xy")
 #' plot(E030, xlim=c(0, 200), ylim=c(0, 10000000))
-#' tetmer(E030)
+#' \dontrun{tetmer(E030)}
 "E030"
 
