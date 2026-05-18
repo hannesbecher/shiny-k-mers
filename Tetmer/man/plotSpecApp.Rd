@@ -12,6 +12,6 @@ plotSpecApp(input, spec)
 \item{spec}{Spectrum object}
 }
 \description{
-Wrapper around \code{plot.spectrum} adding some other bits.
+Wrapper around \code{plot.spectrum} adding some other elements.
 }
 \keyword{internal}

@@ -12,7 +12,7 @@ addvertlines(input, optimised = 0)
 \item{optimised}{The fit obtained from optim.}
 }
 \description{
-Using \code{input}, this function plots dashed vertical lines at multiples of \code{n}
-corresponding to the samples's ploidy.
+Using \code{input}, this function plots dashed vertical lines at multiples
+of \code{n} corresponding to the sample's ploidy.
 }
 \keyword{internal}
