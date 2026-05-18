@@ -54,7 +54,7 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c(".spec", "E028"))
+utils::globalVariables(c(".spec", "E028", "xlimits"))
 
 #' Run the Tetmer app server
 #'
@@ -485,130 +485,68 @@ plotSpecApp <- function(input, spec){
 #'
 #' @keywords internal
 #' @return NULL
-pointsFit <- function(input, optimised=0, probs, factors){
+pointsFit <- function(input, optimised = 0, probs, factors){
 
-  if(input$fitmod=="man"){
-    if(input$mod %in% c("d", "tau", "traaa")){
-      points(
-        colSums(eval(probs, envir = list(txmin=1, txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
-                  eval(factors, envir=list(tth=input$tth)))*input$tyadj*1000000,
-        col="red", type='l', lty=1, lwd=2
-      )
-    }
-    if(input$mod %in% c("tal", "traab")){
-      points(
-        colSums(eval(probs, envir = list(txmin=1, txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
-                  eval(factors, envir=list(tth=input$tth, tdiverg=input$tdiverg)))*input$tyadj*1000000,
-        col="red", type='l', lty=1, lwd=2
-      )
-    }
-    if(input$mod == "tse"){
-      points(
-        colSums(eval(probs, envir = list(txmin=1, txmax=input$txmax, tkcov=input$tkcov, tbias=input$tbias)) *
-                  eval(factors, envir=list(tth=input$tth, tdiverg=input$tdiverg, pal=input$pallo)))*input$tyadj*1000000,
-        col="red", type='l', lty=1, lwd=2
-      )
-    }
+  diverg <- if(input$mod %in% c("tal","traab","tse")) {
+    if(input$fitmod == "man") input$tdiverg else optimised$par[5]
+  } else NULL
+
+  pallo <- if(input$mod == "tse") {
+    if(input$fitmod == "man") input$pallo else optimised$par[6]
+  } else NULL
+
+  if(input$fitmod == "man"){
+    points(
+      evalModel(probs, factors,
+                xmin = 1, xmax = input$txmax,
+                kcov = input$tkcov, bias = input$tbias,
+                theta = input$tth, gs = input$tyadj,
+                diverg = diverg, pallo = pallo),
+      col = "red", type = 'l', lty = 1, lwd = 2
+    )
   }
-  if(input$fitmod=="auto"){
-    if(input$mod %in% c("d", "tau", "traaa")){
-      points(input$axrange[1]:input$axrange[2],
-             colSums(eval(probs, envir = list(txmin=input$axrange[1], txmax=input$axrange[2],
-                                              tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                       eval(factors, envir=list(tth=optimised$par[3])))*optimised$par[4]*1000000,
-             col="red", type='l', lty=1, lwd=2
-      )
-    }
-    if(input$mod %in% c("tal", "traab")){
-      points(input$axrange[1]:input$axrange[2],
-             colSums(eval(probs,
-                          envir = list(txmin=input$axrange[1], txmax=input$axrange[2],
-                                       tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                       eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5]))
-             )*optimised$par[4]*1000000,
-             col="red", type='l', lty=1, lwd=2
-      )
-    }
-    if(input$mod == "tse"){
-      points(input$axrange[1]:input$axrange[2],
-             colSums(eval(probs,
-                          envir = list(txmin=input$axrange[1], txmax=input$axrange[2],
-                                       tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                       eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5], pal=optimised$par[6]))
-             )*optimised$par[4]*1000000,
-             col="red", type='l', lty=1, lwd=2
-      )
-    }
+
+  if(input$fitmod == "auto"){
+    points(input$axrange[1]:input$axrange[2],
+      evalModel(probs, factors,
+                xmin = input$axrange[1], xmax = input$axrange[2],
+                kcov = optimised$par[1], bias = optimised$par[2],
+                theta = optimised$par[3], gs = optimised$par[4],
+                diverg = diverg, pallo = pallo),
+      col = "red", type = 'l', lty = 1, lwd = 2
+    )
   }
 }
 
-
-# only run in auto mode
 pointsExtrap <- function(input, optimised, probs, factors){
-  if(input$mod %in% c("d", "tau", "traaa")){
-    points(1:input$axrange[1],
-           colSums(eval(probs, envir = list(txmin=1, txmax=input$axrange[1],
-                                            tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                     eval(factors, envir=list(tth=optimised$par[3])))*optimised$par[4]*1000000,
-           col="red", type='l', lty=2, lwd=2
-    )
-  }
-  if(input$mod %in% c("tal", "traab")){
-    points(1:input$axrange[1],
-           colSums(eval(probs,
-                        envir = list(txmin=1, txmax=input$axrange[1],
-                                     tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                     eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5]))
-           )*optimised$par[4]*1000000,
-           col="red", type='l', lty=2, lwd=2
-    )
-  }
-  if(input$mod == "tse"){
-    points(1:input$axrange[1],
-           colSums(eval(probs,
-                        envir = list(txmin=1, txmax=input$axrange[1],
-                                     tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                     eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5], pal=optimised$par[6]))
-           )*optimised$par[4]*1000000,
-           col="red", type='l', lty=2, lwd=2
-    )
-  }
+
+  diverg <- if(input$mod %in% c("tal", "traab","tse")) optimised$par[5] else NULL
+  pallo  <- if(input$mod =="tse") optimised$par[6] else NULL
+
+  points(1:input$axrange[1],
+    evalModel(probs, factors,
+              xmin = 1, xmax = input$axrange[1],
+              kcov = optimised$par[1], bias = optimised$par[2],
+              theta = optimised$par[3], gs = optimised$par[4],
+              diverg = diverg, pallo = pallo),
+    col = "red", type = '1', lty = 2, lwd = 2
+  )
 }
 
 pointsContam <- function(input, optimised, spect, probs, factors){
-  if(input$mod %in% c("d", "tau", "traaa")){
-    points(1:input$axrange[1],
-           spect@data$count[1:input$axrange[1]] -
-             colSums(eval(probs,
-                          envir = list(txmin=1, txmax=input$axrange[1],
-                                       tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                       eval(factors, envir=list(tth=optimised$par[3]))
-             ) * optimised$par[4]*1000000,
-           type='l', col=4, lwd=2
-    )
-  }
-  if(input$mod %in% c("tal", "traab")){
-    points(1:input$axrange[1],
-           spect@data$count[1:input$axrange[1]] -
-             colSums(eval(probs,
-                          envir = list(txmin=1, txmax=input$axrange[1],
-                                       tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                       eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5]))
-             ) * optimised$par[4]*1000000,
-           type='l', col=4, lwd=2
-    )
-  }
-  if(input$mod == "tse"){
-    points(1:input$axrange[1],
-           spect@data$count[1:input$axrange[1]] -
-             colSums(eval(probs,
-                          envir = list(txmin=1, txmax=input$axrange[1],
-                                       tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                       eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5], pal=optimised$par[6]))
-             ) * optimised$par[4]*1000000,
-           type='l', col=4, lwd=2
-    )
-  }
+
+  diverg <- if(input$mod %in% c("tal","traab","tse")) optimised$par[5] else NULL
+  pallo  <- if(input$mod == "tse") optimised$par[6] else NULL
+
+  points(1:input$axrange[1],
+    spect@data$count[1:input$axrange[1]] -
+      evalModel(probs, factors,
+                xmin = 1, xmax = input$axrange[1],
+                kcov = optimised$par[1], bias = optimised$par[2],
+                theta = optimised$par[3], gs = optimised$par[4],
+                diverg = diverg, pallo = pallo),
+    type = '1', col = 4, lwd = 2
+  ) 
 }
 
 #' Generate text for Tetmer window
@@ -978,52 +916,28 @@ prepare.spectrum <- function(spe){
 
 #' Generate a function to be minimised
 #'
-#' This is then minimised by \code{optim}.
-#'
 #' @param input Input from GUI (contains model, parameter ranges, etc.)
 #' @param probs Expression for k-mer spectrum peak shapes
 #' @param factors Expression for k-mer spectrum peak factors
 #'
 #' @return A function serving as input to \code{optim}
-#'
 #' @keywords internal
 makeMinFun <- function(input, probs, factors){
 
-  if(input$mod=="d"){
-    return(function(x, xlimits, spec) {
-      sum(
-        (spec@data$count[xlimits[1]:xlimits[2]] -
-           colSums(eval(probs, envir = list(txmin=xlimits[1], txmax=xlimits[2], tkcov=x[1], tbias=x[2])) *
-                     eval(factors, envir=list(tth=x[3])))*x[4]*1000000) ^2
-      )
-    })
-  }
-  if(input$mod %in% c("tal", "traab")){
-    return(function(x, xlimits, spec) {
-      sum(
-        (spec@data$count[xlimits[1]:xlimits[2]] -
-           colSums(eval(probs, envir = list(txmin=xlimits[1], txmax=xlimits[2], tkcov=x[1], tbias=x[2])) *
-                     eval(factors, envir=list(tth=x[3], tdiverg=x[5])))*x[4]*1000000) ^2
-      )
-    })
-  }
-  if(input$mod == "tse"){
-    return(function(x, xlimits, spec) {
-      sum(
-        (spec@data$count[xlimits[1]:xlimits[2]] -
-           colSums(eval(probs, envir = list(txmin=xlimits[1], txmax=xlimits[2], tkcov=x[1], tbias=x[2])) *
-                     eval(factors, envir=list(tth=x[3], tdiverg=x[5], pal=x[6])))*x[4]*1000000) ^2
-      )
-    })
-  }
-  if(input$mod %in% c("tau", "traaa")){
-    return(function(x, xlimits, spec) {
-      sum(
-        (spec@data$count[xlimits[1]:xlimits[2]] -
-           colSums(eval(probs, envir = list(txmin=xlimits[1], txmax=xlimits[2], tkcov=x[1], tbias=x[2])) *
-                     eval(factors, envir=list(tth=x[3])))*x[4]*1000000) ^2
-      )
-    })
+  diverg_idx <- if(input$mod %in% c("tal", "traab","tse")) 5 else NULL
+  pallo_idx  <- if(input$mod == "tse") 6 else NULL
+
+  function(x, limits, spec) {
+    diverg <- if(!is.null(diverg_idx)) x[diverg_idx] else NULL
+    pallo  <- if(!is.null(pallo_idx))  x[pallo_idx]  else NULL
+    sum(
+      (spec@data$count[xlimits[1]:xlimits[2]] - 
+         evalModel(probs, factors, 
+                   xmin = xlimits[1], xmax = xlimits[2],
+                   kcov = x[1], bias = x[2],
+                   theta = x[3], gs = x[4],
+                   diverg = diverg, pallo = pallo)) ^ 2
+    )
   }
 }
 
@@ -1115,6 +1029,40 @@ getFactors <- function(input){
   if(input$mod=="traaa") return(factorTraaa)
   if(input$mod=="traab") return(factorTraab)
   if(input$mod=="d")     return(factorDip)
+}
+
+#' Evaluate the expected k-mer spectrum
+#'
+#' Core computation shared across pointsFit, pointsExtrap,
+#' pointsContam and makeMinFun. Evaluates the model expressions
+#' and returns the expected k-mer counts.
+#'
+#' @param probs Expression for peak shapes
+#' @param factors Expression for peak factors
+#' @param xmin Integer, lower x limit
+#' @param xmax Integer, upper x limit
+#' @param kcov Numeric, monoploid k-mer coverage
+#' @param bias Numeric, peak width parameter
+#' @param theta Numeric, population-scaled mutation rate
+#' @param gs Numeric, haploid genome size in millions
+#' @param diverg Numeric, divergence time T (allopolyploids only)
+#' @param pallo Numeric, proportion allotetraploid (tse model only)
+#'
+#' @return Numeric vector of expected k-mer counts
+#' @keywords internal
+evalModel <- function(probs, factors, xmin, xmax,
+                      kcov, bias, theta, gs,
+                      diverg = NULL, pallo = NULL) {
+
+probsEnv <- list (txmin = xmin, txmax = xmax,
+                  tkcov = kcov, tbias = bias)
+
+factorsEnv <- list(tth = theta)
+if (!is.null(diverg)) factorsEnv$diverg <- diverg
+if (!is.null(pallo))  factorsEnv$pal    <- pallo
+
+colSums(eval(probs, envir = probsEnv) *
+          eval(factors, envir = factorsEnv)) * gs * 1000000
 }
 
 #' Raw k-mer spectrum peaks
