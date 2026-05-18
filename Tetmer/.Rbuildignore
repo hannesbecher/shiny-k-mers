@@ -3,3 +3,4 @@
 ^.*\data-raw\*$
 ^\.positai$
 ^\.claude$
+^data-raw$

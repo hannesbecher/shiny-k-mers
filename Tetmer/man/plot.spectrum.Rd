@@ -7,13 +7,13 @@
 \method{plot}{spectrum}(x, main, xlab, ylab, ...)
 }
 \arguments{
-\item{x}{An object of class spectrum}
+\item{x}{An object of class \code{spectrum}}
 
 \item{main}{(optional) A string passed to \code{plot()}}
 
-\item{xlab}{(optional) A two-element numeric to \code{plot()}}
+\item{xlab}{(optional) A string passed to \code{plot()}}
 
-\item{ylab}{(optional) A two-element numeric passed to \code{plot()}}
+\item{ylab}{(optional) A string passed to \code{plot()}}
 
 \item{...}{other keyword arguments to be passed to \code{plot()}}
 }
@@ -21,7 +21,8 @@
 Uses the plot function to generate a scatter plot of a k-mer spectrum.
 }
 \details{
-It may be useful to set \code{log="xy"} or to limit the plotting range using \code{xlims} or \code{ylims}.
+It may be useful to set \code{log="xy"} or to limit the plotting range
+using \code{xlim} or \code{ylim}.
 }
 \examples{
 plot(E030, log="xy")

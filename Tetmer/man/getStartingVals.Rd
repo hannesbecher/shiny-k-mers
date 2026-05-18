@@ -10,7 +10,7 @@ getStartingVals(input)
 \item{input}{Input from GUI (contains model, parameter ranges, etc.)}
 }
 \value{
-A named vector of starting vlues
+A named vector of starting values
 }
 \description{
 Starting values for optimisation
