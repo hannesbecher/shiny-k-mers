@@ -529,7 +529,7 @@ pointsExtrap <- function(input, optimised, probs, factors){
               kcov = optimised$par[1], bias = optimised$par[2],
               theta = optimised$par[3], gs = optimised$par[4],
               diverg = diverg, pallo = pallo),
-    col = "red", type = '1', lty = 2, lwd = 2
+    col = "red", type = 'l', lty = 2, lwd = 2
   )
 }
 
@@ -545,7 +545,7 @@ pointsContam <- function(input, optimised, spect, probs, factors){
                 kcov = optimised$par[1], bias = optimised$par[2],
                 theta = optimised$par[3], gs = optimised$par[4],
                 diverg = diverg, pallo = pallo),
-    type = '1', col = 4, lwd = 2
+    type = 'l', col = 4, lwd = 2
   ) 
 }
 
@@ -927,7 +927,7 @@ makeMinFun <- function(input, probs, factors){
   diverg_idx <- if(input$mod %in% c("tal", "traab","tse")) 5 else NULL
   pallo_idx  <- if(input$mod == "tse") 6 else NULL
 
-  function(x, limits, spec) {
+  function(x, xlimits, spec) {
     diverg <- if(!is.null(diverg_idx)) x[diverg_idx] else NULL
     pallo  <- if(!is.null(pallo_idx))  x[pallo_idx]  else NULL
     sum(
@@ -1054,15 +1054,17 @@ evalModel <- function(probs, factors, xmin, xmax,
                       kcov, bias, theta, gs,
                       diverg = NULL, pallo = NULL) {
 
-probsEnv <- list (txmin = xmin, txmax = xmax,
-                  tkcov = kcov, tbias = bias)
+  probsEnv <- list(txmin = as.numeric(xmin),
+                   txmax = as.numeric(xmax),
+                   tkcov = as.numeric(kcov),
+                   tbias = as.numeric(bias))
 
-factorsEnv <- list(tth = theta)
-if (!is.null(diverg)) factorsEnv$diverg <- diverg
-if (!is.null(pallo))  factorsEnv$pal    <- pallo
+  factorsEnv <- list(tth = as.numeric(theta))
+  if (!is.null(diverg)) factorsEnv$tdiverg <- as.numeric(diverg)
+  if (!is.null(pallo))  factorsEnv$pal     <- as.numeric(pallo)
 
-colSums(eval(probs, envir = probsEnv) *
-          eval(factors, envir = factorsEnv)) * gs * 1000000
+  colSums(eval(probs, envir = probsEnv) *
+            eval(factors, envir = factorsEnv)) * as.numeric(gs) * 1000000
 }
 
 #' Raw k-mer spectrum peaks
