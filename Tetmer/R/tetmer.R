@@ -1,31 +1,33 @@
 
-# initial parameters for manual fitting ####
-txmax <- 200
-txmin <- 5
-tymax <- 10000
-tkcov <- 15
-tbias <- -1.8
-tth <- 0.04
-tyadj <- 200
-tdiverg <- 30
-pallo <- 0
-
-# starting ranges for auto fitting ####
-
-agsl <- 6
-agsh <- 9
-akcovl <- 10
-akcovh <- 100
-abiasl <- -5
-abiash <- -3
-athl <- -2
-athh <- 0.6
-adivl <- 0.1
-adivh <- 100
-axrangel <- 45
-axrangeh <- 200
-apallol <- 0.01
-apalloh <- 0.99
+# Default parameter values -- consolidated into a single internal list
+# to avoid polluting the user namespace
+.defaults <- list(
+  # Manual fitting defaults
+  txmax   = 200,
+  txmin   = 5,
+  tymax   = 10000,
+  tkcov   = 15,
+  tbias   = -1.8,
+  tth     = 0.04,
+  tyadj   = 200,
+  tdiverg = 30,
+  pallo   = 0,
+  # Auto fitting range defaults
+  agsl    = 6,
+  agsh    = 9,
+  akcovl  = 10,
+  akcovh  = 100,
+  abiasl  = -5,
+  abiash  = -3,
+  athl    = -2,
+  athh    = 0.6,
+  adivl   = 0.1,
+  adivh   = 100,
+  axrangel = 45,
+  axrangeh = 200,
+  apallol  = 0.01,
+  apalloh  = 0.99
+)
 
 .sliderRanges <- list(gsMin=3,
                      gsMax=10,
@@ -54,7 +56,7 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c(".spec", "E028", "xlimits"))
+utils::globalVariables(c(".spec", "E028", "xlimits", ".defaults"))
 
 #' Run the Tetmer app server
 #'
@@ -62,17 +64,17 @@ utils::globalVariables(c(".spec", "E028", "xlimits"))
 #' @param output Default argument for a \code{shiny} server function. Leave empty.
 #'
 #' @return NULL
-#' @importFrom stats optim
+#' @importFrom stats optim runif
 #' @importFrom shiny reactiveValues renderPlot renderText observeEvent
 #' @importFrom shiny fluidPage titlePanel fluidRow column plotOutput
 #' @importFrom shiny verbatimTextOutput numericInput fileInput actionButton
 #' @importFrom shiny icon wellPanel h4 checkboxInput radioButtons
-#' @importFrom shiny conditionalPanel sliderInput shinyApp
+#' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification
 #' @importFrom graphics abline legend points text
 #' @importFrom utils assignInMyNamespace
-tet.server <- function(input, output) {
+tetServer <- function(input, output) {
 
-  # Reactive values — session-scoped state, replaces all <<- assignments
+  # Reactive values -- session-scoped state, replaces all <<- assignments
   rv <- reactiveValues(
     spec      = .spec,
     optimised = NULL,
@@ -99,6 +101,13 @@ tet.server <- function(input, output) {
       rv$optimised <- doOptimisation(input, rv$spec,
                                      minFun       = minFun,
                                      startingVals = startingVals)
+      if(is.null(rv$optimised)){
+        showNotification(
+          "Optimisation failed after multiple attempts -- try adjusting the parameter ranges.",
+          type = "error", duration = 10
+        )
+        return()
+      }
       rv$model     <- input$mod
       addvertlines(input, rv$optimised)
       pointsFit(input, rv$optimised, probs = probs, factors = factors)
@@ -139,7 +148,7 @@ tet.server <- function(input, output) {
   observeEvent(input$histFile, {
     fPath <- input$histFile$datapath
     fName <- input$histFile$name
-    rv$spec <- prepare.spectrum(
+    rv$spec <- prepareSpectrum(
       read.spectrum(fPath,
                     nam = strsplit(fName, "[.]")[[1]][[1]],
                     k = input$kVal)
@@ -195,26 +204,26 @@ makeUI <- function(spec){
                              conditionalPanel(condition = "input.fitmod == 'man'",
                                               wellPanel(
                                                 h4("2nd: Adjust plotting area, make all data peaks visible"),
-                                                numericInput('txmax', 'Max multiplicity', txmax),
-                                                numericInput('tymax', 'y axis max (x1000)', tymax)
+                                                numericInput('txmax', 'Max multiplicity', .defaults$txmax),
+                                                numericInput('tymax', 'y axis max (x1000)', .defaults$tymax)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'man'",
                                               wellPanel(
                                                 h4("3rd: Param ranges"),
-                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', tkcov),
-                                                numericInput('tbias', 'Peak width', tbias),
-                                                numericInput('tth', 'theta', tth),
-                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', tyadj)
+                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', .defaults$tkcov),
+                                                numericInput('tbias', 'Peak width', .defaults$tbias),
+                                                numericInput('tth', 'theta', .defaults$tth),
+                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .defaults$tyadj)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Only allopolyploids, adjust sub-genome split time"),
-                                                        numericInput('tdiverg', 'T (in units of 2Ne)', tdiverg)
+                                                        numericInput('tdiverg', 'T (in units of 2Ne)', .defaults$tdiverg)
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Only seg. allopolyploids, adjust p-allo"),
-                                                        numericInput('pallo', 'p-allo', pallo)
+                                                        numericInput('pallo', 'p-allo', .defaults$pallo)
                                               ))
                       ),
                       column(3,
@@ -222,7 +231,7 @@ makeUI <- function(spec){
                                               wellPanel(h4("2nd: Adjust the fitting area, make all data peaks visible"),
                                                         sliderInput("axrange", "x limits for fitting",
                                                                     min=.sliderRanges$xrangeMin, max = .sliderRanges$xrangeMax,
-                                                                    value=c(axrangel,axrangeh)),
+                                                                    value=c(.defaults$axrangel, .defaults$axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
                                                                     min=-2, max = .sliderRanges$ymax,
                                                                     value=1, step = 0.1)
@@ -233,29 +242,29 @@ makeUI <- function(spec){
 
                                                         sliderInput('akcov', 'k-mer  multiplicity',
                                                                     min=.sliderRanges$kcovMin, max = .sliderRanges$kcovMax,
-                                                                    value=c(akcovl, akcovh)),
+                                                                    value=c(.defaults$akcovl, .defaults$akcovh)),
                                                         sliderInput('abias', 'Peak width',
                                                                     min=.sliderRanges$biasMin, max = .sliderRanges$biasMax,
-                                                                    value=c(abiasl, abiash), step = 0.1),
+                                                                    value=c(.defaults$abiasl, .defaults$abiash), step = 0.1),
                                                         sliderInput('ath', "log10 of theta",
                                                                     min=.sliderRanges$thMin, max = .sliderRanges$thMax, step = 0.05,
-                                                                    value=c(athl, athh)),
+                                                                    value=c(.defaults$athl, .defaults$athh)),
                                                         sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
                                                                     min=.sliderRanges$gsMin, max = .sliderRanges$gsMax,
-                                                                    value=c(agsl, agsh))
+                                                                    value=c(.defaults$agsl, .defaults$agsh))
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Allopolyploids only, adjust sub-genome split time"),
                                                         sliderInput('adiv', 'T (in units of 2Ne)',
                                                                     min=.sliderRanges$divMin, max=.sliderRanges$divMax,
-                                                                    value=c(adivl, adivh))
+                                                                    value=c(.defaults$adivl, .defaults$adivh))
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Proportion of genome that is allopolyploid"),
                                                         sliderInput('apallo', 'p-allo',
                                                                     min=.sliderRanges$palloMin, max=.sliderRanges$palloMax,
-                                                                    value=c(apallol, apalloh))
+                                                                    value=c(.defaults$apallol, .defaults$apalloh))
                                               ))
 
                       )
@@ -278,8 +287,8 @@ makeUI <- function(spec){
 #' @examples \dontrun{tetmer(E028)}
 #' \dontrun{tetmer(E030)}
 tetmer <- function(sp=E028){
-  assignInMyNamespace(".spec", prepare.spectrum(sp))
-  shinyApp(ui = makeUI(.spec), server = tet.server)
+  assignInMyNamespace(".spec", prepareSpectrum(sp))
+  shinyApp(ui = makeUI(.spec), server = tetServer)
 }
 
 #' A named k-mer spectrum class
@@ -292,7 +301,7 @@ tetmer <- function(sp=E028){
 #' @export
 setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
 
-# Initialise .spec at package level — set properly by tetmer() before app launch
+# Initialise .spec at package level -- set properly by tetmer() before app launch
 .spec <- methods::new("spectrum",
                       name = "",
                       data = data.frame(mult = integer(0), count = integer(0)),
@@ -309,7 +318,7 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #'   value to retain. K-mers with multiplicity above this value are
 #'   discarded. Defaults to 1000.
 #' @param no0 (optional) A logical value. If \code{FALSE} (default),
-#'   \code{prepare.spectrum} is run on the data to insert missing
+#'   \code{prepareSpectrum} is run on the data to insert missing
 #'   multiplicity values. If \code{TRUE}, this step is skipped.
 #' @param ... keyword arguments to be passed to \code{read.table}
 #' @return A \code{spectrum} object
@@ -338,7 +347,7 @@ read.spectrum <- function(f,
              k=k
   )
   if(no0==FALSE) {
-    return(prepare.spectrum(spc))
+    return(prepareSpectrum(spc))
   } else {
     return(spc)
   }
@@ -617,7 +626,7 @@ textOut <- function(input, optimised, spec){
 
   if(input$fitmod == "auto"){
 
-    # Extract named parameters — no magic numbers
+    # Extract named parameters -- no magic numbers
     kcov   <- optimised$par["cov"]
     bias   <- optimised$par["bias"]
     theta  <- optimised$par["theta"]
@@ -682,7 +691,7 @@ textOut <- function(input, optimised, spec){
 #' @keywords internal
 #'
 #' @return A \code{spectrum} object.
-prepare.spectrum <- function(spe){
+prepareSpectrum <- function(spe){
   sp <- spe
   maxMult <- sp@data[nrow(sp@data), 1]
   if(maxMult < 500) maxMult <- 500
@@ -756,40 +765,77 @@ getStartingVals <- function(input){
   }
 }
 
-doOptimisation <- function(input, sp, minFun, startingVals){
+#' Optimise population genetic parameters
+#'
+#' Runs the L-BFGS-B optimisation algorithm with multiple random restarts
+#' to find the best fit to the k-mer spectrum. On the first attempt, the
+#' midpoint of the slider ranges is used as the starting value. On subsequent
+#' attempts, starting values are randomly perturbed within the slider bounds.
+#'
+#' @param input Input from GUI (contains model, parameter ranges, etc.)
+#' @param sp A \code{spectrum} object
+#' @param minFun The objective function from \code{makeMinFun}
+#' @param startingVals Named vector of starting values from \code{getStartingVals}
+#' @param maxAttempts Integer, maximum number of optimisation attempts (default 5)
+#'
+#' @return An \code{optim} result list with named \code{$par}, or \code{NULL} if all attempts fail
+#' @keywords internal
+doOptimisation <- function(input, sp, minFun, startingVals, maxAttempts = 5){
+
+  # Define bounds based on model
   if(input$mod %in% c("tal", "traab")){
-    result <- optim(startingVals,
-                    minFun,
-                    lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1]),
-                    upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2]),
-                    xlimits=c(input$axrange[1],input$axrange[2]),
-                    spec=sp,
-                    method = "L-BFGS-B")
-    names(result$par) <- c("cov", "bias", "theta", "haplSize", "diverg")
-    return(result)
+    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1])
+    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2])
+    parNames <- c("cov", "bias", "theta", "haplSize", "diverg")
+  } else if(input$mod == "tse"){
+    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1])
+    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2])
+    parNames <- c("cov", "bias", "theta", "haplSize", "diverg", "pallo")
+  } else {
+    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6))
+    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6))
+    parNames <- c("cov", "bias", "theta", "haplSize")
   }
-  if(input$mod == "tse"){
-    result <- optim(startingVals,
-                    minFun,
-                    lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1]),
-                    upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2]),
-                    xlimits=c(input$axrange[1],input$axrange[2]),
-                    spec=sp,
-                    method = "L-BFGS-B")
-    names(result$par) <- c("cov", "bias", "theta", "haplSize", "diverg", "pallo")
-    return(result)
+
+  bestResult <- NULL
+  bestValue  <- Inf
+
+  for(attempt in seq_len(maxAttempts)){
+
+    # First attempt: midpoint starting values
+    # Subsequent attempts: randomly perturb within bounds
+    if(attempt == 1){
+      sv <- startingVals
+    } else {
+      sv <- startingVals * runif(length(startingVals), 0.5, 1.5)
+      sv <- pmax(pmin(sv, upper), lower)
+    }
+
+    result <- tryCatch({
+      optim(sv, minFun,
+            lower   = lower,
+            upper   = upper,
+            xlimits = c(input$axrange[1], input$axrange[2]),
+            spec    = sp,
+            method  = "L-BFGS-B")
+    }, error = function(e) NULL)
+
+    # Keep best result across attempts
+    if(!is.null(result) && result$value < bestValue){
+      bestResult <- result
+      bestValue  <- result$value
+    }
+
+    # Stop early if clean convergence
+    if(!is.null(result) && result$convergence == 0) break
   }
-  if(input$mod %in% c("d", "tau", "traaa")){
-    result <- optim(startingVals,
-                    minFun,
-                    lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6)),
-                    upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6)),
-                    xlimits=c(input$axrange[1],input$axrange[2]),
-                    spec = sp,
-                    method = "L-BFGS-B")
-    names(result$par) <- c("cov", "bias", "theta", "haplSize")
-    return(result)
+
+  # Add names to parameters
+  if(!is.null(bestResult)){
+    names(bestResult$par) <- parNames
   }
+
+  return(bestResult)
 }
 
 #' Factors for k-mer spectrum peaks
