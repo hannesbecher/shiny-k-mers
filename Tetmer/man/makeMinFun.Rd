@@ -17,6 +17,6 @@ makeMinFun(input, probs, factors)
 A function serving as input to \code{optim}
 }
 \description{
-This is then minimised by \code{optim}.
+Generate a function to be minimised
 }
 \keyword{internal}
