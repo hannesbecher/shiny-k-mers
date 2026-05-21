@@ -4,12 +4,14 @@
 \alias{tetServer}
 \title{Run the Tetmer app server}
 \usage{
-tetServer(input, output)
+tetServer(input, output, session)
 }
 \arguments{
 \item{input}{Default argument for a \code{shiny} server function. Leave empty.}
 
 \item{output}{Default argument for a \code{shiny} server function. Leave empty.}
+
+\item{session}{Default argument for a \code{shiny} server function. Leave empty.}
 }
 \description{
 Run the Tetmer app server

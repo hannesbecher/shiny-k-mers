@@ -62,6 +62,7 @@ utils::globalVariables(c(".spec", "E028", "xlimits", ".defaults"))
 #'
 #' @param input Default argument for a \code{shiny} server function. Leave empty.
 #' @param output Default argument for a \code{shiny} server function. Leave empty.
+#' @param session Default argument for a \code{shiny} server function. Leave empty.
 #'
 #' @return NULL
 #' @importFrom stats optim runif
@@ -70,9 +71,10 @@ utils::globalVariables(c(".spec", "E028", "xlimits", ".defaults"))
 #' @importFrom shiny verbatimTextOutput numericInput fileInput actionButton
 #' @importFrom shiny icon wellPanel h4 checkboxInput radioButtons
 #' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification
+#' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
 #' @importFrom utils assignInMyNamespace
-tetServer <- function(input, output) {
+tetServer <- function(input, output, session) {
 
   # Reactive values -- session-scoped state, replaces all <<- assignments
   rv <- reactiveValues(
@@ -153,6 +155,7 @@ tetServer <- function(input, output) {
                     nam = strsplit(fName, "[.]")[[1]][[1]],
                     k = input$kVal)
     )
+    updateNumericInput(session, "kVal", value = rv$spec@k)
   })
 
 }
@@ -395,47 +398,35 @@ plot.spectrum <- function(x,
 #' @param optimised The fit obtained from optim.
 #' @keywords internal
 #' @return NULL
-addvertlines <- function(input, optimised=0){
-  if(input$fitmod=="man"){
-    if(input$mod=="d") {
-      abline(v=c(1,2)*input$tkcov, lty=2,col="grey")
-      text(input$tkcov[1], input$tymax*.7*1000, "1x", col="grey", cex=4)
-      text(input$tkcov[1]*2, input$tymax*.7*1000, "2x", col="grey", cex=4)
+addvertlines <- function(input, optimised = 0){
+
+  # Determine number of peaks based on model
+  nPeaks <- switch(input$mod,
+    d     = 2,
+    traaa = 3,
+    traab = 3,
+    tau   = 4,
+    tal   = 4,
+    tse   = 4
+  )
+
+  if(input$fitmod == "man"){
+    cov   <- input$tkcov
+    ypos  <- input$tymax * .7 * 1000
+    abline(v = seq_len(nPeaks) * cov, lty = 2, col = "grey")
+    for(i in seq_len(nPeaks)){
+      text(cov * i, ypos, paste0(i, "x"), col = "grey", cex = 4)
     }
-    if(input$mod %in% c("traaa", "traab")){
-      abline(v=c(1,2,3)*input$tkcov, lty=2,col="grey")
-      text(input$tkcov[1], input$tymax*.7*1000, "1x", col="grey", cex=4)
-      text(input$tkcov[1]*2, input$tymax*.7*1000, "2x", col="grey", cex=4)
-      text(input$tkcov[1]*3, input$tymax*.7*1000, "3x", col="grey", cex=4)
+  }
+
+  if(input$fitmod == "auto"){
+    cov  <- as.numeric(optimised$par["cov"])
+    ypos <- (10^input$ymax) * .7 * 1000000
+    abline(v = seq_len(nPeaks) * cov, lty = 2, col = "grey")
+    for(i in seq_len(nPeaks)){
+      text(cov * i, ypos, paste0(i, "x"), col = "grey", cex = 4)
     }
-    if(input$mod %in% c("tau", "tal", "tse")){
-      abline(v=c(1,2,3,4)*input$tkcov, lty=2,col="grey")
-      text(input$tkcov[1], input$tymax*.7*1000, "1x", col="grey", cex=4)
-      text(input$tkcov[1]*2, input$tymax*.7*1000, "2x", col="grey", cex=4)
-      text(input$tkcov[1]*3, input$tymax*.7*1000, "3x", col="grey", cex=4)
-      text(input$tkcov[1]*4, input$tymax*.7*1000, "4x", col="grey", cex=4)
-    }
-  } #if manual mode
-  if(input$fitmod=="auto"){
-    if(input$mod=="d"){
-      abline(v=c(1,2)*optimised$par["cov"], lty=2,col="grey")
-      text(optimised$par["cov"], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par["cov"]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
-    }
-    if(input$mod%in%c("traaa", "traab")){
-      abline(v=c(1,2,3)*optimised$par["cov"], lty=2,col="grey")
-      text(optimised$par["cov"], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par["cov"]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
-      text(optimised$par["cov"]*3, (10^input$ymax)*.7*1000000, "3x", col="grey", cex=4)
-    }
-    if(input$mod%in%c("tau", "tal", "tse")){
-      abline(v=c(1,2,3,4)*optimised$par["cov"], lty=2,col="grey")
-      text(optimised$par["cov"], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par["cov"]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
-      text(optimised$par["cov"]*3, (10^input$ymax)*.7*1000000, "3x", col="grey", cex=4)
-      text(optimised$par["cov"]*4, (10^input$ymax)*.7*1000000, "4x", col="grey", cex=4)
-    }
-  } # if auto mode
+  }
 }
 
 #' Plot annotated spectrum

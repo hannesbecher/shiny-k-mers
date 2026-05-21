@@ -9,7 +9,7 @@ A \code{spectrum} object containing a name and data frame:
 \describe{
 \item{\code{name}}{The name 'E. arctica, E028'}
 \item{\code{k}}{The k-mer length of 27}
-\item{\code{data}}{A dataframe with coulmns \describe{
+\item{\code{data}}{A dataframe with columns \describe{
 \item{\code{mult}}{K-mer multiplicity}
 \item{\code{count}}{The number of different k-mer at a given multiplicity}
 }

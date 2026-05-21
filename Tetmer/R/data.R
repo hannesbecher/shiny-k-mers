@@ -8,7 +8,7 @@
 #' \describe{
 #'   \item{`name`}{The name 'E. arctica, E028'}
 #'   \item{`k`}{The k-mer length of 27}
-#'   \item{`data`}{A dataframe with coulmns \describe{
+#'   \item{`data`}{A dataframe with columns \describe{
 #'   \item{`mult`}{K-mer multiplicity}
 #'   \item{`count`}{The number of different k-mer at a given multiplicity}
 #'   }
