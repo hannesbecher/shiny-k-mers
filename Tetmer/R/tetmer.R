@@ -237,7 +237,7 @@ makeUI <- function(spec){
                                                                     value=c(.tetmerDefaults$axrangel, .tetmerDefaults$axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
                                                                     min=-2, max = .sliderRanges$ymax,
-                                                                    value=1, step = 0.1)
+                                                                    value=(-2 + .sliderRanges$ymax)/2 + 1, step = (.sliderRanges$ymax +2)/100 )
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'auto'",
@@ -546,7 +546,7 @@ pointsContam <- function(input, optimised, spect, probs, factors){
                 theta = optimised$par["theta"], gs = optimised$par["haplSize"],
                 diverg = diverg, pallo = pallo),
     type = 'l', col = 4, lwd = 2
-  ) 
+  )
 }
 
 #' Generate text for Tetmer window
@@ -628,7 +628,7 @@ textOut <- function(input, optimised, spec){
     base <- paste0(
       label, " MODEL, AUTO FITTED",
       if(hasK) paste0("\n         k-mer length: ", k) else "",
-      "\n  monoploid k-mer cov: ", round(kcov, 1),
+      "\n  monoploid k-mer cov: ", round(kcov, 3),
       "\n      theta per k-mer: ", round(theta, 4),
       perNuc(theta),
       "\n     non-rep GS (Mbp): ", round(gs, 1),
@@ -710,8 +710,8 @@ makeMinFun <- function(input, probs, factors){
     diverg <- if(!is.null(diverg_idx)) x[diverg_idx] else NULL
     pallo  <- if(!is.null(pallo_idx))  x[pallo_idx]  else NULL
     sum(
-      (spec@data$count[xlimits[1]:xlimits[2]] - 
-         evalModel(probs, factors, 
+      (spec@data$count[xlimits[1]:xlimits[2]] -
+         evalModel(probs, factors,
                    xmin = xlimits[1], xmax = xlimits[2],
                    kcov = x[1], bias = x[2],
                    theta = x[3], gs = x[4],
