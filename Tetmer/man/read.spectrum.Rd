@@ -18,7 +18,7 @@ value to retain. K-mers with multiplicity above this value are
 discarded. Defaults to 1000.}
 
 \item{no0}{(optional) A logical value. If \code{FALSE} (default),
-\code{prepare.spectrum} is run on the data to insert missing
+\code{prepareSpectrum} is run on the data to insert missing
 multiplicity values. If \code{TRUE}, this step is skipped.}
 
 \item{...}{keyword arguments to be passed to \code{read.table}}

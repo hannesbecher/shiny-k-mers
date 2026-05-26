@@ -1,31 +1,33 @@
 
-# initial parameters for manual fitting ####
-txmax <- 200
-txmin <- 5
-tymax <- 10000
-tkcov <- 15
-tbias <- -1.8
-tth <- 0.04
-tyadj <- 200
-tdiverg <- 30
-pallo <- 0
-
-# starting ranges for auto fitting ####
-
-agsl <- 6
-agsh <- 9
-akcovl <- 10
-akcovh <- 100
-abiasl <- -5
-abiash <- -3
-athl <- -2
-athh <- 0.6
-adivl <- 0.1
-adivh <- 100
-axrangel <- 45
-axrangeh <- 200
-apallol <- 0.01
-apalloh <- 0.99
+# Default parameter values -- consolidated into a single internal list
+# to avoid polluting the user namespace
+.tetmerDefaults <- list(
+  # Manual fitting defaults
+  txmax   = 200,
+  txmin   = 5,
+  tymax   = 10000,
+  tkcov   = 15,
+  tbias   = -1.8,
+  tth     = 0.04,
+  tyadj   = 200,
+  tdiverg = 30,
+  pallo   = 0,
+  # Auto fitting range defaults
+  agsl    = 6,
+  agsh    = 9,
+  akcovl  = 10,
+  akcovh  = 100,
+  abiasl  = -5,
+  abiash  = -3,
+  athl    = -2,
+  athh    = 0.6,
+  adivl   = 0.1,
+  adivh   = 100,
+  axrangel = 45,
+  axrangeh = 200,
+  apallol  = 0.01,
+  apalloh  = 0.99
+)
 
 .sliderRanges <- list(gsMin=3,
                      gsMax=10,
@@ -54,25 +56,27 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c(".spec", "E028", "xlimits"))
+utils::globalVariables(c(".spec", "E028", "xlimits", ".tetmerDefaults"))
 
 #' Run the Tetmer app server
 #'
 #' @param input Default argument for a \code{shiny} server function. Leave empty.
 #' @param output Default argument for a \code{shiny} server function. Leave empty.
+#' @param session Default argument for a \code{shiny} server function. Leave empty.
 #'
 #' @return NULL
-#' @importFrom stats optim
+#' @importFrom stats optim runif
 #' @importFrom shiny reactiveValues renderPlot renderText observeEvent
 #' @importFrom shiny fluidPage titlePanel fluidRow column plotOutput
 #' @importFrom shiny verbatimTextOutput numericInput fileInput actionButton
 #' @importFrom shiny icon wellPanel h4 checkboxInput radioButtons
-#' @importFrom shiny conditionalPanel sliderInput shinyApp
+#' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification
+#' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
 #' @importFrom utils assignInMyNamespace
-tet.server <- function(input, output) {
+tetServer <- function(input, output, session) {
 
-  # Reactive values — session-scoped state, replaces all <<- assignments
+  # Reactive values -- session-scoped state, replaces all <<- assignments
   rv <- reactiveValues(
     spec      = .spec,
     optimised = NULL,
@@ -99,6 +103,13 @@ tet.server <- function(input, output) {
       rv$optimised <- doOptimisation(input, rv$spec,
                                      minFun       = minFun,
                                      startingVals = startingVals)
+      if(is.null(rv$optimised)){
+        showNotification(
+          "Optimisation failed after multiple attempts -- try adjusting the parameter ranges.",
+          type = "error", duration = 10
+        )
+        return()
+      }
       rv$model     <- input$mod
       addvertlines(input, rv$optimised)
       pointsFit(input, rv$optimised, probs = probs, factors = factors)
@@ -139,11 +150,12 @@ tet.server <- function(input, output) {
   observeEvent(input$histFile, {
     fPath <- input$histFile$datapath
     fName <- input$histFile$name
-    rv$spec <- prepare.spectrum(
+    rv$spec <- prepareSpectrum(
       read.spectrum(fPath,
                     nam = strsplit(fName, "[.]")[[1]][[1]],
                     k = input$kVal)
     )
+    updateNumericInput(session, "kVal", value = rv$spec@k)
   })
 
 }
@@ -195,26 +207,26 @@ makeUI <- function(spec){
                              conditionalPanel(condition = "input.fitmod == 'man'",
                                               wellPanel(
                                                 h4("2nd: Adjust plotting area, make all data peaks visible"),
-                                                numericInput('txmax', 'Max multiplicity', txmax),
-                                                numericInput('tymax', 'y axis max (x1000)', tymax)
+                                                numericInput('txmax', 'Max multiplicity', .tetmerDefaults$txmax),
+                                                numericInput('tymax', 'y axis max (x1000)', .tetmerDefaults$tymax)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'man'",
                                               wellPanel(
                                                 h4("3rd: Param ranges"),
-                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', tkcov),
-                                                numericInput('tbias', 'Peak width', tbias),
-                                                numericInput('tth', 'theta', tth),
-                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', tyadj)
+                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', .tetmerDefaults$tkcov),
+                                                numericInput('tbias', 'Peak width', .tetmerDefaults$tbias),
+                                                numericInput('tth', 'theta', .tetmerDefaults$tth),
+                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .tetmerDefaults$tyadj)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Only allopolyploids, adjust sub-genome split time"),
-                                                        numericInput('tdiverg', 'T (in units of 2Ne)', tdiverg)
+                                                        numericInput('tdiverg', 'T (in units of 2Ne)', .tetmerDefaults$tdiverg)
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Only seg. allopolyploids, adjust p-allo"),
-                                                        numericInput('pallo', 'p-allo', pallo)
+                                                        numericInput('pallo', 'p-allo', .tetmerDefaults$pallo)
                                               ))
                       ),
                       column(3,
@@ -222,7 +234,7 @@ makeUI <- function(spec){
                                               wellPanel(h4("2nd: Adjust the fitting area, make all data peaks visible"),
                                                         sliderInput("axrange", "x limits for fitting",
                                                                     min=.sliderRanges$xrangeMin, max = .sliderRanges$xrangeMax,
-                                                                    value=c(axrangel,axrangeh)),
+                                                                    value=c(.tetmerDefaults$axrangel, .tetmerDefaults$axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
                                                                     min=-2, max = .sliderRanges$ymax,
                                                                     value=1, step = 0.1)
@@ -233,29 +245,29 @@ makeUI <- function(spec){
 
                                                         sliderInput('akcov', 'k-mer  multiplicity',
                                                                     min=.sliderRanges$kcovMin, max = .sliderRanges$kcovMax,
-                                                                    value=c(akcovl, akcovh)),
+                                                                    value=c(.tetmerDefaults$akcovl, .tetmerDefaults$akcovh)),
                                                         sliderInput('abias', 'Peak width',
                                                                     min=.sliderRanges$biasMin, max = .sliderRanges$biasMax,
-                                                                    value=c(abiasl, abiash), step = 0.1),
+                                                                    value=c(.tetmerDefaults$abiasl, .tetmerDefaults$abiash), step = 0.1),
                                                         sliderInput('ath', "log10 of theta",
                                                                     min=.sliderRanges$thMin, max = .sliderRanges$thMax, step = 0.05,
-                                                                    value=c(athl, athh)),
+                                                                    value=c(.tetmerDefaults$athl, .tetmerDefaults$athh)),
                                                         sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
                                                                     min=.sliderRanges$gsMin, max = .sliderRanges$gsMax,
-                                                                    value=c(agsl, agsh))
+                                                                    value=c(.tetmerDefaults$agsl, .tetmerDefaults$agsh))
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Allopolyploids only, adjust sub-genome split time"),
                                                         sliderInput('adiv', 'T (in units of 2Ne)',
                                                                     min=.sliderRanges$divMin, max=.sliderRanges$divMax,
-                                                                    value=c(adivl, adivh))
+                                                                    value=c(.tetmerDefaults$adivl, .tetmerDefaults$adivh))
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Proportion of genome that is allopolyploid"),
                                                         sliderInput('apallo', 'p-allo',
                                                                     min=.sliderRanges$palloMin, max=.sliderRanges$palloMax,
-                                                                    value=c(apallol, apalloh))
+                                                                    value=c(.tetmerDefaults$apallol, .tetmerDefaults$apalloh))
                                               ))
 
                       )
@@ -278,8 +290,8 @@ makeUI <- function(spec){
 #' @examples \dontrun{tetmer(E028)}
 #' \dontrun{tetmer(E030)}
 tetmer <- function(sp=E028){
-  assignInMyNamespace(".spec", prepare.spectrum(sp))
-  shinyApp(ui = makeUI(.spec), server = tet.server)
+  assignInMyNamespace(".spec", prepareSpectrum(sp))
+  shinyApp(ui = makeUI(.spec), server = tetServer)
 }
 
 #' A named k-mer spectrum class
@@ -292,7 +304,7 @@ tetmer <- function(sp=E028){
 #' @export
 setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
 
-# Initialise .spec at package level — set properly by tetmer() before app launch
+# Initialise .spec at package level -- set properly by tetmer() before app launch
 .spec <- methods::new("spectrum",
                       name = "",
                       data = data.frame(mult = integer(0), count = integer(0)),
@@ -309,7 +321,7 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #'   value to retain. K-mers with multiplicity above this value are
 #'   discarded. Defaults to 1000.
 #' @param no0 (optional) A logical value. If \code{FALSE} (default),
-#'   \code{prepare.spectrum} is run on the data to insert missing
+#'   \code{prepareSpectrum} is run on the data to insert missing
 #'   multiplicity values. If \code{TRUE}, this step is skipped.
 #' @param ... keyword arguments to be passed to \code{read.table}
 #' @return A \code{spectrum} object
@@ -338,7 +350,7 @@ read.spectrum <- function(f,
              k=k
   )
   if(no0==FALSE) {
-    return(prepare.spectrum(spc))
+    return(prepareSpectrum(spc))
   } else {
     return(spc)
   }
@@ -386,47 +398,35 @@ plot.spectrum <- function(x,
 #' @param optimised The fit obtained from optim.
 #' @keywords internal
 #' @return NULL
-addvertlines <- function(input, optimised=0){
-  if(input$fitmod=="man"){
-    if(input$mod=="d") {
-      abline(v=c(1,2)*input$tkcov, lty=2,col="grey")
-      text(input$tkcov[1], input$tymax*.7*1000, "1x", col="grey", cex=4)
-      text(input$tkcov[1]*2, input$tymax*.7*1000, "2x", col="grey", cex=4)
+addvertlines <- function(input, optimised = 0){
+
+  # Determine number of peaks based on model
+  nPeaks <- switch(input$mod,
+    d     = 2,
+    traaa = 3,
+    traab = 3,
+    tau   = 4,
+    tal   = 4,
+    tse   = 4
+  )
+
+  if(input$fitmod == "man"){
+    cov   <- input$tkcov
+    ypos  <- input$tymax * .7 * 1000
+    abline(v = seq_len(nPeaks) * cov, lty = 2, col = "grey")
+    for(i in seq_len(nPeaks)){
+      text(cov * i, ypos, paste0(i, "x"), col = "grey", cex = 4)
     }
-    if(input$mod %in% c("traaa", "traab")){
-      abline(v=c(1,2,3)*input$tkcov, lty=2,col="grey")
-      text(input$tkcov[1], input$tymax*.7*1000, "1x", col="grey", cex=4)
-      text(input$tkcov[1]*2, input$tymax*.7*1000, "2x", col="grey", cex=4)
-      text(input$tkcov[1]*3, input$tymax*.7*1000, "3x", col="grey", cex=4)
+  }
+
+  if(input$fitmod == "auto"){
+    cov  <- as.numeric(optimised$par["cov"])
+    ypos <- (10^input$ymax) * .7 * 1000000
+    abline(v = seq_len(nPeaks) * cov, lty = 2, col = "grey")
+    for(i in seq_len(nPeaks)){
+      text(cov * i, ypos, paste0(i, "x"), col = "grey", cex = 4)
     }
-    if(input$mod %in% c("tau", "tal", "tse")){
-      abline(v=c(1,2,3,4)*input$tkcov, lty=2,col="grey")
-      text(input$tkcov[1], input$tymax*.7*1000, "1x", col="grey", cex=4)
-      text(input$tkcov[1]*2, input$tymax*.7*1000, "2x", col="grey", cex=4)
-      text(input$tkcov[1]*3, input$tymax*.7*1000, "3x", col="grey", cex=4)
-      text(input$tkcov[1]*4, input$tymax*.7*1000, "4x", col="grey", cex=4)
-    }
-  } #if manual mode
-  if(input$fitmod=="auto"){
-    if(input$mod=="d"){
-      abline(v=c(1,2)*optimised$par[1], lty=2,col="grey")
-      text(optimised$par[1], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par[1]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
-    }
-    if(input$mod%in%c("traaa", "traab")){
-      abline(v=c(1,2,3)*optimised$par[1], lty=2,col="grey")
-      text(optimised$par[1], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par[1]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
-      text(optimised$par[1]*3, (10^input$ymax)*.7*1000000, "3x", col="grey", cex=4)
-    }
-    if(input$mod%in%c("tau", "tal", "tse")){
-      abline(v=c(1,2,3,4)*optimised$par[1], lty=2,col="grey")
-      text(optimised$par[1], (10^input$ymax)*.7*1000000, "1x", col="grey", cex=4)
-      text(optimised$par[1]*2, (10^input$ymax)*.7*1000000, "2x", col="grey", cex=4)
-      text(optimised$par[1]*3, (10^input$ymax)*.7*1000000, "3x", col="grey", cex=4)
-      text(optimised$par[1]*4, (10^input$ymax)*.7*1000000, "4x", col="grey", cex=4)
-    }
-  } # if auto mode
+  }
 }
 
 #' Plot annotated spectrum
@@ -488,11 +488,11 @@ plotSpecApp <- function(input, spec){
 pointsFit <- function(input, optimised = 0, probs, factors){
 
   diverg <- if(input$mod %in% c("tal","traab","tse")) {
-    if(input$fitmod == "man") input$tdiverg else optimised$par[5]
+    if(input$fitmod == "man") input$tdiverg else optimised$par["diverg"]
   } else NULL
 
   pallo <- if(input$mod == "tse") {
-    if(input$fitmod == "man") input$pallo else optimised$par[6]
+    if(input$fitmod == "man") input$pallo else optimised$par["pallo"]
   } else NULL
 
   if(input$fitmod == "man"){
@@ -510,8 +510,8 @@ pointsFit <- function(input, optimised = 0, probs, factors){
     points(input$axrange[1]:input$axrange[2],
       evalModel(probs, factors,
                 xmin = input$axrange[1], xmax = input$axrange[2],
-                kcov = optimised$par[1], bias = optimised$par[2],
-                theta = optimised$par[3], gs = optimised$par[4],
+                kcov = optimised$par["cov"], bias = optimised$par["bias"],
+                theta = optimised$par["theta"], gs = optimised$par["haplSize"],
                 diverg = diverg, pallo = pallo),
       col = "red", type = 'l', lty = 1, lwd = 2
     )
@@ -520,14 +520,14 @@ pointsFit <- function(input, optimised = 0, probs, factors){
 
 pointsExtrap <- function(input, optimised, probs, factors){
 
-  diverg <- if(input$mod %in% c("tal", "traab","tse")) optimised$par[5] else NULL
-  pallo  <- if(input$mod =="tse") optimised$par[6] else NULL
+  diverg <- if(input$mod %in% c("tal", "traab","tse")) optimised$par["diverg"] else NULL
+  pallo  <- if(input$mod =="tse") optimised$par["pallo"] else NULL
 
   points(1:input$axrange[1],
     evalModel(probs, factors,
               xmin = 1, xmax = input$axrange[1],
-              kcov = optimised$par[1], bias = optimised$par[2],
-              theta = optimised$par[3], gs = optimised$par[4],
+              kcov = optimised$par["cov"], bias = optimised$par["bias"],
+              theta = optimised$par["theta"], gs = optimised$par["haplSize"],
               diverg = diverg, pallo = pallo),
     col = "red", type = 'l', lty = 2, lwd = 2
   )
@@ -535,15 +535,15 @@ pointsExtrap <- function(input, optimised, probs, factors){
 
 pointsContam <- function(input, optimised, spect, probs, factors){
 
-  diverg <- if(input$mod %in% c("tal","traab","tse")) optimised$par[5] else NULL
-  pallo  <- if(input$mod == "tse") optimised$par[6] else NULL
+  diverg <- if(input$mod %in% c("tal","traab","tse")) optimised$par["diverg"] else NULL
+  pallo  <- if(input$mod == "tse") optimised$par["pallo"] else NULL
 
   points(1:input$axrange[1],
     spect@data$count[1:input$axrange[1]] -
       evalModel(probs, factors,
                 xmin = 1, xmax = input$axrange[1],
-                kcov = optimised$par[1], bias = optimised$par[2],
-                theta = optimised$par[3], gs = optimised$par[4],
+                kcov = optimised$par["cov"], bias = optimised$par["bias"],
+                theta = optimised$par["theta"], gs = optimised$par["haplSize"],
                 diverg = diverg, pallo = pallo),
     type = 'l', col = 4, lwd = 2
   ) 
@@ -559,341 +559,120 @@ pointsContam <- function(input, optimised, spect, probs, factors){
 #' to be displayed in the Tetmer window.
 #' @keywords internal
 textOut <- function(input, optimised, spec){
-  if(spec@k > 0){
-    if(input$fitmod == "man"){
-      if(input$mod=="d"){
-        return(paste(
-          "DIPLOID MODEL, MANUAL FIT",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", input$tkcov,
-          "\n      theta per k-mer:", input$tth,
-          "\n theta per nucleotide:", round(input$tth/spec@k, 4),
-          "\n     non-rep GS (Mbp):", input$tyadj,
-          "\n    bias (peak width):", input$tbias
-        ))
-      }
-      if(input$mod=="tau"){
-        return(paste(
-          "AUTOTETRAPLOID MODEL, MANUAL FIT",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", input$tkcov,
-          "\n      theta per k-mer:", input$tth,
-          "\n theta per nucleotide:", round(input$tth/spec@k, 4),
-          "\n     non-rep GS (Mbp):", input$tyadj,
-          "\n    bias (peak width):", input$tbias
-        ))
-      }
-      if(input$mod=="traaa"){
-        return(paste(
-          "AUTOTRIPLOID MODEL, MANUAL FIT",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", input$tkcov,
-          "\n      theta per k-mer:", input$tth,
-          "\n theta per nucleotide:", round(input$tth/spec@k, 4),
-          "\n     non-rep GS (Mbp):", input$tyadj,
-          "\n    bias (peak width):", input$tbias
-        ))
-      }
-      if(input$mod=="traab"){
-        return(paste(
-          "ALLOTRIPLOID MODEL, MANUAL FIT",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", input$tkcov,
-          "\n      theta per k-mer:", input$tth,
-          "\n theta per nucleotide:", round(input$tth/spec@k, 4),
-          "\n                    T:", input$tdiverg,
-          "\n     non-rep GS (Mbp):", input$tyadj,
-          "\n    bias (peak width):", input$tbias,
-          "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4),
-          "\ndiverg per nucleotide:", round(input$tth*input$tdiverg/spec@k, 4)
-        ))
-      }
-      if(input$mod=="tal"){
-        return(paste(
-          "ALLOTETRAPLOID MODEL, MANUAL FIT",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", input$tkcov,
-          "\n      theta per k-mer:", input$tth,
-          "\n theta per nucleotide:", round(input$tth/spec@k, 4),
-          "\n                    T:", input$tdiverg,
-          "\n     non-rep GS (Mbp):", input$tyadj,
-          "\n    bias (peak width):", input$tbias,
-          "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4),
-          "\ndiverg per nucleotide:", round(input$tth*input$tdiverg/spec@k, 4)
-        ))
-      }
-      if(input$mod=="tse"){
-        return(paste(
-          "SEG. ALLOTET. MODEL, MANUAL FIT",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", input$tkcov,
-          "\n      theta per k-mer:", input$tth,
-          "\n theta per nucleotide:", round(input$tth/spec@k, 4),
-          "\n                    T:", input$tdiverg,
-          "\n     non-rep GS (Mbp):", input$tyadj,
-          "\n    bias (peak width):", input$tbias,
-          "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4),
-          "\ndiverg per nucleotide:", round(input$tth*input$tdiverg/spec@k, 4),
-          "\n       prop. allotet.:", input$pallo
-        ))
-      }
-    } # if man
-    if(input$fitmod == "auto"){
-      if(input$mod=="tal"){
-        return(paste(
-          "ALLOTETRAPLOID MODEL, AUTO FITTED",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n      theta per k-mer:", round(optimised$par[3],4),
-          "\n theta per nucleotide:", round(optimised$par[3]/spec@k,5),
-          "\n                    T:", round(optimised$par[5],2),
-          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
-          "\n     diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
-          "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/spec@k, 4),
-          "\n\nSTARTING RANGES (MIN MAX)",
-          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-          "\n                    T:", input$adiv[1], input$adiv[2],
-          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-          "\n    bias (peak width):", input$abias[1], input$abias[2],
-          "\n              x range:", input$axrange[1], input$axrange[2]
-        ))
-      }
-      if(input$mod=="tse"){
-        return(paste(
-          "SEG. ALLOTET. MODEL, AUTO FITTED",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n      theta per k-mer:", round(optimised$par[3],4),
-          "\n theta per nucleotide:", round(optimised$par[3]/spec@k,5),
-          "\n                    T:", round(optimised$par[5],2),
-          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
-          "\n     diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
-          "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/spec@k, 4),
-          "\n       prop. allotet.:", round(optimised$par[6], 2),
-          "\n\nSTARTING RANGES (MIN MAX)",
-          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-          "\n                    T:", input$adiv[1], input$adiv[2],
-          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-          "\n    bias (peak width):", input$abias[1], input$abias[2],
-          "\n              x range:", input$axrange[1], input$axrange[2],
-          "\n       prop. allotet.:", input$apallo[1], input$apallo[2]
-        ))
-      }
-      if(input$mod=="traab"){
-        return(paste(
-          "ALLOTRIPLOID MODEL, AUTO FITTED",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n      theta per k-mer:", round(optimised$par[3],4),
-          "\n theta per nucleotide:", round(optimised$par[3]/spec@k,5),
-          "\n                    T:", round(optimised$par[5],2),
-          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
-          "\n     diverg per k-mer:", round(optimised$par[3]*optimised$par[5], 4),
-          "\ndiverg per nucleotide:", round(optimised$par[3]*optimised$par[5]/spec@k, 4),
-          "\n\nSTARTING RANGES (MIN MAX)",
-          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-          "\n                    T:", input$adiv[1], input$adiv[2],
-          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-          "\n    bias (peak width):", input$abias[1], input$abias[2],
-          "\n              x range:", input$axrange[1], input$axrange[2]
-        ))
-      }
-      if(input$mod=="tau"){
-        return(paste(
-          "AUTOTETRAPLOID MODEL, AUTO FITTED",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n      theta per k-mer:", round(optimised$par[3],4),
-          "\n theta per nucleotide:", round(optimised$par[3]/spec@k,5),
-          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
-          "\n\nSTARTING RANGES (MIN MAX)",
-          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-          "\n    bias (peak width):", input$abias[1], input$abias[2],
-          "\n              x range:", input$axrange[1], input$axrange[2]
-        ))
-      }
-      if(input$mod=="traaa"){
-        return(paste(
-          "AUTOTRIPLOID MODEL, AUTO FITTED",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n      theta per k-mer:", round(optimised$par[3],4),
-          "\n theta per nucleotide:", round(optimised$par[3]/spec@k,5),
-          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
-          "\n\nSTARTING RANGES (MIN MAX)",
-          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-          "\n    bias (peak width):", input$abias[1], input$abias[2],
-          "\n              x range:", input$axrange[1], input$axrange[2]
-        ))
-      }
-      if(input$mod=="d"){
-        return(paste(
-          "DIPLOID MODEL, AUTO FITTED",
-          "\n         k-mer length:", spec@k,
-          "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-          "\n      theta per k-mer:", round(optimised$par[3],4),
-          "\n theta per nucleotide:", round(optimised$par[3]/spec@k,5),
-          "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-          "\n    bias (peak width):", round(optimised$par[2],1),
-          "\n\nSTARTING RANGES (MIN MAX)",
-          "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-          "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-          "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-          "\n    bias (peak width):", input$abias[1], input$abias[2],
-          "\n              x range:", input$axrange[1], input$axrange[2]
-        ))
-      }
-    } # if auto fit
-  } # if k > 0
-  # k == 0: no per-nucleotide estimates
-  if(input$fitmod == "man"){
-    if(input$mod=="d"){
-      return(paste(
-        "DIPLOID MODEL, MANUAL FIT",
-        "\n  monoploid k-mer cov:", input$tkcov,
-        "\n      theta per k-mer:", input$tth,
-        "\n     non-rep GS (Mbp):", input$tyadj,
-        "\n    bias (peak width):", input$tbias
-      ))
-    }
-    if(input$mod=="tau"){
-      return(paste(
-        "AUTOTETRAPLOID MODEL, MANUAL FIT",
-        "\n  monoploid k-mer cov:", input$tkcov,
-        "\n      theta per k-mer:", input$tth,
-        "\n     non-rep GS (Mbp):", input$tyadj,
-        "\n    bias (peak width):", input$tbias
-      ))
-    }
-    if(input$mod=="traaa"){
-      return(paste(
-        "AUTOTRIPLOID MODEL, MANUAL FIT",
-        "\n  monoploid k-mer cov:", input$tkcov,
-        "\n      theta per k-mer:", input$tth,
-        "\n     non-rep GS (Mbp):", input$tyadj,
-        "\n    bias (peak width):", input$tbias
-      ))
-    }
-    if(input$mod=="traab"){
-      return(paste(
-        "ALLOTRIPLOID MODEL, MANUAL FIT",
-        "\n  monoploid k-mer cov:", input$tkcov,
-        "\n      theta per k-mer:", input$tth,
-        "\n                    T:", input$tdiverg,
-        "\n     non-rep GS (Mbp):", input$tyadj,
-        "\n    bias (peak width):", input$tbias,
-        "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4)
-      ))
-    }
-    if(input$mod=="tal"){
-      return(paste(
-        "ALLOTETRAPLOID MODEL, MANUAL FIT",
-        "\n  monoploid k-mer cov:", input$tkcov,
-        "\n      theta per k-mer:", input$tth,
-        "\n                    T:", input$tdiverg,
-        "\n     non-rep GS (Mbp):", input$tyadj,
-        "\n    bias (peak width):", input$tbias,
-        "\n     diverg per k-mer:", round(input$tth*input$tdiverg, 4)
-      ))
-    }
-  } # if man
-  if(input$fitmod == "auto"){
-    if(input$mod=="tal"){
-      return(paste(
-        "ALLOTETRAPLOID MODEL, AUTO FITTED",
-        "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-        "\n      theta per k-mer:", round(optimised$par[3],4),
-        "\n                    T:", round(optimised$par[5],2),
-        "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-        "\n    bias (peak width):", round(optimised$par[2],1),
-        "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
-        "\n\nSTARTING RANGES (MIN MAX)",
-        "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-        "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-        "\n                    T:", input$adiv[1], input$adiv[2],
-        "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-        "\n    bias (peak width):", input$abias[1], input$abias[2],
-        "\n              x range:", input$axrange[1], input$axrange[2]
-      ))
-    }
-    if(input$mod=="traab"){
-      return(paste(
-        "ALLOTRIPLOID MODEL, AUTO FITTED",
-        "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-        "\n      theta per k-mer:", round(optimised$par[3],4),
-        "\n                    T:", round(optimised$par[5],2),
-        "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-        "\n    bias (peak width):", round(optimised$par[2],1),
-        "\n     per k-mer diverg:", round(optimised$par[3]*optimised$par[5], 3),
-        "\n\nSTARTING RANGES (MIN MAX)",
-        "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-        "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-        "\n                    T:", input$adiv[1], input$adiv[2],
-        "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-        "\n    bias (peak width):", input$abias[1], input$abias[2],
-        "\n              x range:", input$axrange[1], input$axrange[2]
-      ))
-    }
-    if(input$mod=="tau"){
-      return(paste(
-        "AUTOTETRAPLOID MODEL, AUTO FITTED",
-        "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-        "\n      theta per k-mer:", round(optimised$par[3],4),
-        "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-        "\n    bias (peak width):", round(optimised$par[2],1),
-        "\n\nSTARTING RANGES (MIN MAX)",
-        "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-        "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-        "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-        "\n    bias (peak width):", input$abias[1], input$abias[2],
-        "\n              x range:", input$axrange[1], input$axrange[2]
-      ))
-    }
-    if(input$mod=="traaa"){
-      return(paste(
-        "AUTOTRIPLOID MODEL, AUTO FITTED",
-        "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-        "\n      theta per k-mer:", round(optimised$par[3],4),
-        "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-        "\n    bias (peak width):", round(optimised$par[2],1),
-        "\n\nSTARTING RANGES (MIN MAX)",
-        "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-        "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-        "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-        "\n    bias (peak width):", input$abias[1], input$abias[2],
-        "\n              x range:", input$axrange[1], input$axrange[2]
-      ))
-    }
-    if(input$mod=="d"){
-      return(paste(
-        "DIPLOID MODEL, AUTO FITTED",
-        "\n  monoploid k-mer cov:", round(optimised$par[1],1),
-        "\n      theta per k-mer:", round(optimised$par[3],4),
-        "\n     non-rep GS (Mbp):", round(optimised$par[4],1),
-        "\n    bias (peak width):", round(optimised$par[2],1),
-        "\n\nSTARTING RANGES (MIN MAX)",
-        "\n  monoploid k-mer cov:", input$akcov[1], input$akcov[2],
-        "\nlog10 theta per k-mer:", input$ath[1], input$ath[2],
-        "\n     non-rep GS (Mbp):", input$ayadj[1], input$ayadj[2],
-        "\n    bias (peak width):", input$abias[1], input$abias[2],
-        "\n              x range:", input$axrange[1], input$axrange[2]
-      ))
-    }
-  } # if auto fit
-}
 
+  k    <- spec@k
+  hasK <- k > 0
+
+  # Helper: per-nucleotide line, only shown when k is known
+  perNuc <- function(val) {
+    if(hasK) paste0("\n theta per nucleotide: ", round(val / k, 5)) else ""
+  }
+  divergPerNuc <- function(val) {
+    if(hasK) paste0("\ndiverg per nucleotide: ", round(val / k, 4)) else ""
+  }
+
+  # Model label lookup
+  label <- switch(input$mod,
+    d     = "DIPLOID",
+    tau   = "AUTOTETRAPLOID",
+    traaa = "AUTOTRIPLOID",
+    traab = "ALLOTRIPLOID",
+    tal   = "ALLOTETRAPLOID",
+    tse   = "SEG. ALLOTET."
+  )
+
+  if(input$fitmod == "man"){
+
+    kcov   <- input$tkcov
+    bias   <- input$tbias
+    theta  <- input$tth
+    gs     <- input$tyadj
+    diverg <- input$tdiverg
+    pallo  <- input$pallo
+
+    base <- paste0(
+      label, " MODEL, MANUAL FIT",
+      if(hasK) paste0("\n         k-mer length: ", k) else "",
+      "\n  monoploid k-mer cov: ", kcov,
+      "\n      theta per k-mer: ", theta,
+      perNuc(theta),
+      "\n     non-rep GS (Mbp): ", gs,
+      "\n    bias (peak width): ", bias
+    )
+
+    if(input$mod %in% c("traab", "tal", "tse")){
+      divergVal <- theta * diverg
+      base <- paste0(base,
+        "\n                    T: ", diverg,
+        "\n     diverg per k-mer: ", round(divergVal, 4),
+        divergPerNuc(divergVal)
+      )
+    }
+    if(input$mod == "tse"){
+      base <- paste0(base, "\n       prop. allotet.: ", pallo)
+    }
+
+    return(base)
+  }
+
+  if(input$fitmod == "auto"){
+
+    # Extract named parameters -- no magic numbers
+    kcov   <- optimised$par["cov"]
+    bias   <- optimised$par["bias"]
+    theta  <- optimised$par["theta"]
+    gs     <- optimised$par["haplSize"]
+    diverg <- optimised$par["diverg"]
+    pallo  <- optimised$par["pallo"]
+
+    base <- paste0(
+      label, " MODEL, AUTO FITTED",
+      if(hasK) paste0("\n         k-mer length: ", k) else "",
+      "\n  monoploid k-mer cov: ", round(kcov, 1),
+      "\n      theta per k-mer: ", round(theta, 4),
+      perNuc(theta),
+      "\n     non-rep GS (Mbp): ", round(gs, 1),
+      "\n    bias (peak width): ", round(bias, 1)
+    )
+
+    if(input$mod %in% c("traab", "tal", "tse")){
+      divergVal <- theta * diverg
+      base <- paste0(base,
+        "\n                    T: ", round(diverg, 2),
+        "\n     diverg per k-mer: ", round(divergVal, 4),
+        divergPerNuc(divergVal)
+      )
+    }
+    if(input$mod == "tse"){
+      base <- paste0(base,
+        "\n       prop. allotet.: ", round(pallo, 2)
+      )
+    }
+
+    # Starting ranges section
+    ranges <- paste0(
+      "\n\nSTARTING RANGES (MIN MAX)",
+      "\n  monoploid k-mer cov: ", input$akcov[1], " ", input$akcov[2],
+      "\nlog10 theta per k-mer: ", input$ath[1], " ", input$ath[2],
+      "\n     non-rep GS (Mbp): ", input$ayadj[1], " ", input$ayadj[2],
+      "\n    bias (peak width): ", input$abias[1], " ", input$abias[2],
+      "\n              x range: ", input$axrange[1], " ", input$axrange[2]
+    )
+
+    if(input$mod %in% c("traab", "tal", "tse")){
+      ranges <- paste0(ranges,
+        "\n                    T: ", input$adiv[1], " ", input$adiv[2]
+      )
+    }
+    if(input$mod == "tse"){
+      ranges <- paste0(ranges,
+        "\n       prop. allotet.: ", input$apallo[1], " ", input$apallo[2]
+      )
+    }
+
+    return(paste0(base, ranges))
+  }
+}
 
 
 #' Prepare spectrum for plotting and fitting
@@ -903,7 +682,7 @@ textOut <- function(input, optimised, spec){
 #' @keywords internal
 #'
 #' @return A \code{spectrum} object.
-prepare.spectrum <- function(spe){
+prepareSpectrum <- function(spe){
   sp <- spe
   maxMult <- sp@data[nrow(sp@data), 1]
   if(maxMult < 500) maxMult <- 500
@@ -977,43 +756,77 @@ getStartingVals <- function(input){
   }
 }
 
-doOptimisation <- function(input, sp, minFun, startingVals){
+#' Optimise population genetic parameters
+#'
+#' Runs the L-BFGS-B optimisation algorithm with multiple random restarts
+#' to find the best fit to the k-mer spectrum. On the first attempt, the
+#' midpoint of the slider ranges is used as the starting value. On subsequent
+#' attempts, starting values are randomly perturbed within the slider bounds.
+#'
+#' @param input Input from GUI (contains model, parameter ranges, etc.)
+#' @param sp A \code{spectrum} object
+#' @param minFun The objective function from \code{makeMinFun}
+#' @param startingVals Named vector of starting values from \code{getStartingVals}
+#' @param maxAttempts Integer, maximum number of optimisation attempts (default 5)
+#'
+#' @return An \code{optim} result list with named \code{$par}, or \code{NULL} if all attempts fail
+#' @keywords internal
+doOptimisation <- function(input, sp, minFun, startingVals, maxAttempts = 5){
+
+  # Define bounds based on model
   if(input$mod %in% c("tal", "traab")){
-    return(
-      optim(startingVals,
-            minFun,
-            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1]),
-            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2]),
-            xlimits=c(input$axrange[1],input$axrange[2]),
-            spec=sp,
-            method = "L-BFGS-B"
-      )
-    )
+    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1])
+    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2])
+    parNames <- c("cov", "bias", "theta", "haplSize", "diverg")
+  } else if(input$mod == "tse"){
+    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1])
+    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2])
+    parNames <- c("cov", "bias", "theta", "haplSize", "diverg", "pallo")
+  } else {
+    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6))
+    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6))
+    parNames <- c("cov", "bias", "theta", "haplSize")
   }
-  if(input$mod == "tse"){
-    return(
-      optim(startingVals,
-            minFun,
-            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1]),
-            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2]),
-            xlimits=c(input$axrange[1],input$axrange[2]),
-            spec=sp,
-            method = "L-BFGS-B"
-      )
-    )
+
+  bestResult <- NULL
+  bestValue  <- Inf
+
+  for(attempt in seq_len(maxAttempts)){
+
+    # First attempt: midpoint starting values
+    # Subsequent attempts: randomly perturb within bounds
+    if(attempt == 1){
+      sv <- startingVals
+    } else {
+      sv <- startingVals * runif(length(startingVals), 0.5, 1.5)
+      sv <- pmax(pmin(sv, upper), lower)
+    }
+
+    result <- tryCatch({
+      optim(sv, minFun,
+            lower   = lower,
+            upper   = upper,
+            xlimits = c(input$axrange[1], input$axrange[2]),
+            spec    = sp,
+            method  = "L-BFGS-B")
+    }, error = function(e) NULL)
+
+    # Keep best result across attempts
+    if(!is.null(result) && result$value < bestValue){
+      bestResult <- result
+      bestValue  <- result$value
+    }
+
+    # Stop early if clean convergence
+    if(!is.null(result) && result$convergence == 0) break
   }
-  if(input$mod %in% c("d", "tau", "traaa")){
-    return(
-      optim(startingVals,
-            minFun,
-            lower=c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6)),
-            upper=c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6)),
-            xlimits=c(input$axrange[1],input$axrange[2]),
-            spec = sp,
-            method = "L-BFGS-B"
-      )
-    )
+
+  # Add names to parameters
+  if(!is.null(bestResult)){
+    names(bestResult$par) <- parNames
   }
+
+  return(bestResult)
 }
 
 #' Factors for k-mer spectrum peaks
@@ -1149,31 +962,36 @@ makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
 
   optimised <- params$optimised
 
+  kcov   <- optimised$par["cov"]
+  bias   <- optimised$par["bias"]
+  theta  <- optimised$par["theta"]
+  gs     <- optimised$par["haplSize"]
+  diverg <- optimised$par["diverg"]
+  pallo  <- optimised$par["pallo"]
+
   if(modelType %in% c("d", "tau", "traaa")){
     points(input$axrange[1]:input$axrange[2],
-           colSums(eval(probs, envir = list(txmin=input$axrange[1], txmax=input$axrange[2],
-                                            tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                     eval(factors, envir=list(tth=optimised$par[3])))*optimised$par[4]*1000000,
+           evalModel(probs, factors,
+                     xmin = input$axrange[1], xmax = input$axrange[2],
+                     kcov = kcov, bias = bias, theta = theta, gs = gs),
            col="red", type='l', lty=1, lwd=2
     )
   }
   if(modelType %in% c("tal", "traab")){
     points(input$axrange[1]:input$axrange[2],
-           colSums(eval(probs,
-                        envir = list(txmin=input$axrange[1], txmax=input$axrange[2],
-                                     tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                     eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5]))
-           )*optimised$par[4]*1000000,
+           evalModel(probs, factors,
+                     xmin = input$axrange[1], xmax = input$axrange[2],
+                     kcov = kcov, bias = bias, theta = theta, gs = gs,
+                     diverg = diverg),
            col="red", type='l', lty=1, lwd=2
     )
   }
   if(modelType == "tse"){
     points(input$axrange[1]:input$axrange[2],
-           colSums(eval(probs,
-                        envir = list(txmin=input$axrange[1], txmax=input$axrange[2],
-                                     tkcov=optimised$par[1], tbias=optimised$par[2])) *
-                     eval(factors, envir=list(tth=optimised$par[3], tdiverg=optimised$par[5], pal=optimised$par[6]))
-           )*optimised$par[4]*1000000,
+           evalModel(probs, factors,
+                     xmin = input$axrange[1], xmax = input$axrange[2],
+                     kcov = kcov, bias = bias, theta = theta, gs = gs,
+                     diverg = diverg, pallo = pallo),
            col="red", type='l', lty=1, lwd=2
     )
   }
