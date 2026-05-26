@@ -1,7 +1,7 @@
 
 # Default parameter values -- consolidated into a single internal list
 # to avoid polluting the user namespace
-.defaults <- list(
+.tetmerDefaults <- list(
   # Manual fitting defaults
   txmax   = 200,
   txmin   = 5,
@@ -56,7 +56,7 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c(".spec", "E028", "xlimits", ".defaults"))
+utils::globalVariables(c(".spec", "E028", "xlimits", ".tetmerDefaults"))
 
 #' Run the Tetmer app server
 #'
@@ -207,26 +207,26 @@ makeUI <- function(spec){
                              conditionalPanel(condition = "input.fitmod == 'man'",
                                               wellPanel(
                                                 h4("2nd: Adjust plotting area, make all data peaks visible"),
-                                                numericInput('txmax', 'Max multiplicity', .defaults$txmax),
-                                                numericInput('tymax', 'y axis max (x1000)', .defaults$tymax)
+                                                numericInput('txmax', 'Max multiplicity', .tetmerDefaults$txmax),
+                                                numericInput('tymax', 'y axis max (x1000)', .tetmerDefaults$tymax)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'man'",
                                               wellPanel(
                                                 h4("3rd: Param ranges"),
-                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', .defaults$tkcov),
-                                                numericInput('tbias', 'Peak width', .defaults$tbias),
-                                                numericInput('tth', 'theta', .defaults$tth),
-                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .defaults$tyadj)
+                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', .tetmerDefaults$tkcov),
+                                                numericInput('tbias', 'Peak width', .tetmerDefaults$tbias),
+                                                numericInput('tth', 'theta', .tetmerDefaults$tth),
+                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .tetmerDefaults$tyadj)
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Only allopolyploids, adjust sub-genome split time"),
-                                                        numericInput('tdiverg', 'T (in units of 2Ne)', .defaults$tdiverg)
+                                                        numericInput('tdiverg', 'T (in units of 2Ne)', .tetmerDefaults$tdiverg)
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'man') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Only seg. allopolyploids, adjust p-allo"),
-                                                        numericInput('pallo', 'p-allo', .defaults$pallo)
+                                                        numericInput('pallo', 'p-allo', .tetmerDefaults$pallo)
                                               ))
                       ),
                       column(3,
@@ -234,7 +234,7 @@ makeUI <- function(spec){
                                               wellPanel(h4("2nd: Adjust the fitting area, make all data peaks visible"),
                                                         sliderInput("axrange", "x limits for fitting",
                                                                     min=.sliderRanges$xrangeMin, max = .sliderRanges$xrangeMax,
-                                                                    value=c(.defaults$axrangel, .defaults$axrangeh)),
+                                                                    value=c(.tetmerDefaults$axrangel, .tetmerDefaults$axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
                                                                     min=-2, max = .sliderRanges$ymax,
                                                                     value=1, step = 0.1)
@@ -245,29 +245,29 @@ makeUI <- function(spec){
 
                                                         sliderInput('akcov', 'k-mer  multiplicity',
                                                                     min=.sliderRanges$kcovMin, max = .sliderRanges$kcovMax,
-                                                                    value=c(.defaults$akcovl, .defaults$akcovh)),
+                                                                    value=c(.tetmerDefaults$akcovl, .tetmerDefaults$akcovh)),
                                                         sliderInput('abias', 'Peak width',
                                                                     min=.sliderRanges$biasMin, max = .sliderRanges$biasMax,
-                                                                    value=c(.defaults$abiasl, .defaults$abiash), step = 0.1),
+                                                                    value=c(.tetmerDefaults$abiasl, .tetmerDefaults$abiash), step = 0.1),
                                                         sliderInput('ath', "log10 of theta",
                                                                     min=.sliderRanges$thMin, max = .sliderRanges$thMax, step = 0.05,
-                                                                    value=c(.defaults$athl, .defaults$athh)),
+                                                                    value=c(.tetmerDefaults$athl, .tetmerDefaults$athh)),
                                                         sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
                                                                     min=.sliderRanges$gsMin, max = .sliderRanges$gsMax,
-                                                                    value=c(.defaults$agsl, .defaults$agsh))
+                                                                    value=c(.tetmerDefaults$agsl, .tetmerDefaults$agsh))
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Allopolyploids only, adjust sub-genome split time"),
                                                         sliderInput('adiv', 'T (in units of 2Ne)',
                                                                     min=.sliderRanges$divMin, max=.sliderRanges$divMax,
-                                                                    value=c(.defaults$adivl, .defaults$adivh))
+                                                                    value=c(.tetmerDefaults$adivl, .tetmerDefaults$adivh))
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Proportion of genome that is allopolyploid"),
                                                         sliderInput('apallo', 'p-allo',
                                                                     min=.sliderRanges$palloMin, max=.sliderRanges$palloMax,
-                                                                    value=c(.defaults$apallol, .defaults$apalloh))
+                                                                    value=c(.tetmerDefaults$apallol, .tetmerDefaults$apalloh))
                                               ))
 
                       )
