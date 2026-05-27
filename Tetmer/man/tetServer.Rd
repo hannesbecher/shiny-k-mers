@@ -4,7 +4,7 @@
 \alias{tetServer}
 \title{Run the Tetmer app server}
 \usage{
-tetServer(input, output, session)
+tetServer(input, output, session, initialSpec)
 }
 \arguments{
 \item{input}{Default argument for a \code{shiny} server function. Leave empty.}
@@ -12,6 +12,8 @@ tetServer(input, output, session)
 \item{output}{Default argument for a \code{shiny} server function. Leave empty.}
 
 \item{session}{Default argument for a \code{shiny} server function. Leave empty.}
+
+\item{initialSpec}{An object of class \code{spectrum} used to initialize the reactive values of the Shiny application.}
 }
 \description{
 Run the Tetmer app server
