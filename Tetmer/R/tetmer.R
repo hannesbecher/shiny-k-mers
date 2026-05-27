@@ -56,13 +56,14 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c(".spec", "E028", "xlimits", ".tetmerDefaults"))
+utils::globalVariables(c("E028", "xlimits", ".tetmerDefaults"))
 
 #' Run the Tetmer app server
 #'
 #' @param input Default argument for a \code{shiny} server function. Leave empty.
 #' @param output Default argument for a \code{shiny} server function. Leave empty.
 #' @param session Default argument for a \code{shiny} server function. Leave empty.
+#' @param initialSpec An object of class \code{spectrum} used to initialize the reactive values of the Shiny application.
 #'
 #' @return NULL
 #' @importFrom stats optim runif
@@ -74,11 +75,11 @@ utils::globalVariables(c(".spec", "E028", "xlimits", ".tetmerDefaults"))
 #' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
 #' @importFrom utils assignInMyNamespace
-tetServer <- function(input, output, session) {
+tetServer <- function(input, output, session, initialSpec) {
 
   # Reactive values -- session-scoped state, replaces all <<- assignments
   rv <- reactiveValues(
-    spec      = .spec,
+    spec      = initialSpec,
     optimised = NULL,
     model     = NULL
   )
@@ -290,8 +291,11 @@ makeUI <- function(spec){
 #' @examples \dontrun{tetmer(E028)}
 #' \dontrun{tetmer(E030)}
 tetmer <- function(sp=E028){
-  assignInMyNamespace(".spec", prepareSpectrum(sp))
-  shinyApp(ui = makeUI(.spec), server = tetServer)
+  spec   <- prepareSpectrum(sp)
+  server <- function(input, output, session){
+    tetServer(input, output, session, initialSpec = spec)
+  }
+  shinyApp(ui = makeUI(spec), server = server)
 }
 
 #' A named k-mer spectrum class
@@ -303,12 +307,6 @@ tetmer <- function(sp=E028){
 #'
 #' @export
 setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
-
-# Initialise .spec at package level -- set properly by tetmer() before app launch
-.spec <- methods::new("spectrum",
-                      name = "",
-                      data = data.frame(mult = integer(0), count = integer(0)),
-                      k    = 0L)
 
 #' Read in a k-mer spectrum
 #'
