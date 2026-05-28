@@ -56,7 +56,7 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c("E028", "xlimits", ".tetmerDefaults"))
+utils::globalVariables(c("E028", "xlimits", ".tetmerDefaults", "initialSpec"))
 
 #' Run the Tetmer app server
 #'
@@ -74,7 +74,6 @@ utils::globalVariables(c("E028", "xlimits", ".tetmerDefaults"))
 #' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification
 #' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
-#' @importFrom utils assignInMyNamespace
 tetServer <- function(input, output, session, initialSpec) {
 
   # Reactive values -- session-scoped state, replaces all <<- assignments
@@ -914,6 +913,7 @@ sliderRanges <- function(){
 #' @param x A named list of slider range values in the same format
 #'   as returned by \code{sliderRanges}
 #' @return NULL, invisibly
+#' @importFrom utils assignInMyNamespace
 #' @export
 #' @examples
 #' \dontrun{
@@ -922,7 +922,7 @@ sliderRanges <- function(){
 #' setSliderRanges(ranges)
 #' }
 setSliderRanges <- function(x){
-  assignInMyNamespace(".sliderRanges", x)
+  utils::assignInMyNamespace(".sliderRanges", x)
 }
 
 #' Enable the segregating allotetraploid model
@@ -933,6 +933,7 @@ setSliderRanges <- function(x){
 #' with \code{tetmer()}.
 #'
 #' @return NULL, invisibly
+#' @importFrom utils assignInMyNamespace
 #' @export
 #' @examples
 #' \dontrun{
@@ -940,7 +941,7 @@ setSliderRanges <- function(x){
 #' tetmer(E028)
 #' }
 allowSegTet <- function(){
-  assignInMyNamespace("modelClasses",
+  utils::assignInMyNamespace("modelClasses",
     list("Diploid" = "d",
          "Triploid (aaa)" = "traaa",
          "Triploid (aab)" = "traab",
