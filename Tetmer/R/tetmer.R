@@ -56,7 +56,7 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c("E028", "xlimits", ".tetmerDefaults", "initialSpec"))
+utils::globalVariables(c("E028", "initialSpec"))
 
 #' Run the Tetmer app server
 #'
