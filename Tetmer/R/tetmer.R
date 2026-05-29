@@ -29,21 +29,21 @@
   apalloh  = 0.99
 )
 
-.sliderRanges <- list(gsMin=3,
-                     gsMax=10,
-                     kcovMin=5,
-                     kcovMax=300,
-                     biasMin=-6,
-                     biasMax=2,
-                     thMin=-4,
-                     thMax=1,
-                     divMin=0.001,
-                     divMax=100,
-                     xrangeMin=0,
-                     xrangeMax=500,
-                     palloMin=0,
-                     palloMax=1,
-                     ymax=2)
+.defaultSliderRanges <- list(gsMin=3,
+                             gsMax=10,
+                             kcovMin=5,
+                             kcovMax=300,
+                             biasMin=-6,
+                             biasMax=2,
+                             thMin=-4,
+                             thMax=1,
+                             divMin=0.001,
+                             divMax=100,
+                             xrangeMin=1,
+                             xrangeMax=500,
+                             palloMin=0,
+                             palloMax=1,
+                             ymax=2)
 
 
 modelClasses <-
@@ -56,7 +56,7 @@ modelClasses <-
 )
 
 # Suppress R CMD check notes for intentional package-level variables
-utils::globalVariables(c("E028"))
+utils::globalVariables(c("E028", "initialSpec"))
 
 #' Run the Tetmer app server
 #'
@@ -74,7 +74,6 @@ utils::globalVariables(c("E028"))
 #' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification
 #' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
-#' @importFrom utils assignInMyNamespace
 tetServer <- function(input, output, session, initialSpec) {
 
   # Reactive values -- session-scoped state, replaces all <<- assignments
@@ -165,6 +164,7 @@ tetServer <- function(input, output, session, initialSpec) {
 # User interface ####
 
 makeUI <- function(spec){
+  currentSliderRanges <- sliderRanges()
   fluidPage(titlePanel("Tetmer v2.3.2"),
                     "Fitting population parameters to k-mer spectra (by Hannes Becher)",
                     fluidRow(
@@ -234,40 +234,40 @@ makeUI <- function(spec){
                              conditionalPanel(condition = "input.fitmod == 'auto'",
                                               wellPanel(h4("2nd: Adjust the fitting area, make all data peaks visible"),
                                                         sliderInput("axrange", "x limits for fitting",
-                                                                    min=.sliderRanges$xrangeMin, max = .sliderRanges$xrangeMax,
+                                                                    min=currentSliderRanges$xrangeMin, max = currentSliderRanges$xrangeMax,
                                                                     value=c(.tetmerDefaults$axrangel, .tetmerDefaults$axrangeh)),
                                                         sliderInput("ymax", "y axis max (does not affect fit)",
-                                                                    min=-2, max = .sliderRanges$ymax,
-                                                                    value=(-2 + .sliderRanges$ymax)/2 + 1, step = (.sliderRanges$ymax +2)/100 )
+                                                                    min=-2, max = currentSliderRanges$ymax,
+                                                                    value=(-2 + currentSliderRanges$ymax)/2 + 1, step = (currentSliderRanges$ymax +2)/100 )
                                               ))),
                       column(3,
                              conditionalPanel(condition = "input.fitmod == 'auto'",
                                               wellPanel(h4("3rd: Param ranges"),
 
                                                         sliderInput('akcov', 'k-mer  multiplicity',
-                                                                    min=.sliderRanges$kcovMin, max = .sliderRanges$kcovMax,
+                                                                    min=currentSliderRanges$kcovMin, max = currentSliderRanges$kcovMax,
                                                                     value=c(.tetmerDefaults$akcovl, .tetmerDefaults$akcovh)),
                                                         sliderInput('abias', 'Peak width',
-                                                                    min=.sliderRanges$biasMin, max = .sliderRanges$biasMax,
+                                                                    min=currentSliderRanges$biasMin, max = currentSliderRanges$biasMax,
                                                                     value=c(.tetmerDefaults$abiasl, .tetmerDefaults$abiash), step = 0.1),
                                                         sliderInput('ath', "log10 of theta",
-                                                                    min=.sliderRanges$thMin, max = .sliderRanges$thMax, step = 0.05,
+                                                                    min=currentSliderRanges$thMin, max = currentSliderRanges$thMax, step = 0.05,
                                                                     value=c(.tetmerDefaults$athl, .tetmerDefaults$athh)),
                                                         sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
-                                                                    min=.sliderRanges$gsMin, max = .sliderRanges$gsMax,
+                                                                    min=currentSliderRanges$gsMin, max = currentSliderRanges$gsMax,
                                                                     value=c(.tetmerDefaults$agsl, .tetmerDefaults$agsh))
                                               ))),
                       column(3,
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
                                               wellPanel(h4("4th: Allopolyploids only, adjust sub-genome split time"),
                                                         sliderInput('adiv', 'T (in units of 2Ne)',
-                                                                    min=.sliderRanges$divMin, max=.sliderRanges$divMax,
+                                                                    min=currentSliderRanges$divMin, max=currentSliderRanges$divMax,
                                                                     value=c(.tetmerDefaults$adivl, .tetmerDefaults$adivh))
                                               )),
                              conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
                                               wellPanel(h4("5th: Proportion of genome that is allopolyploid"),
                                                         sliderInput('apallo', 'p-allo',
-                                                                    min=.sliderRanges$palloMin, max=.sliderRanges$palloMax,
+                                                                    min=currentSliderRanges$palloMin, max=currentSliderRanges$palloMax,
                                                                     value=c(.tetmerDefaults$apallol, .tetmerDefaults$apalloh))
                                               ))
 
@@ -306,6 +306,7 @@ tetmer <- function(sp=E028){
 #' @slot k A \code{numeric} indicating the k-mer length.
 #'
 #' @export
+#' @importFrom methods setClass
 setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
 
 #' Read in a k-mer spectrum
@@ -891,6 +892,54 @@ getProbs <- function(input){
   if(input$mod=="d")                        return(probsDip)
 }
 
+#' Validate and normalise slider range overrides
+#'
+#' @param x A named list of slider range overrides
+#'
+#' @return A named list of numeric scalar slider range values
+#' @keywords internal
+normaliseSliderRanges <- function(x){
+  if (!is.list(x) || is.null(names(x)) || anyNA(names(x)) || any(!nzchar(names(x)))) {
+    stop("Slider range overrides must be a named list.", call. = FALSE)
+  }
+
+  unknownNames <- setdiff(names(x), names(.defaultSliderRanges))
+  if (length(unknownNames) > 0) {
+    stop(
+      paste0(
+        "Unknown slider range name(s): ",
+        paste(unknownNames, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  badLengths <- names(x)[lengths(x) != 1L]
+  if (length(badLengths) > 0) {
+    stop(
+      paste0(
+        "Slider range value(s) must have length 1: ",
+        paste(badLengths, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  coerced <- lapply(names(x), function(name) {
+    numericValue <- suppressWarnings(as.numeric(x[[name]]))
+    if (length(numericValue) != 1L || is.na(numericValue)) {
+      stop(
+        paste0("Slider range `", name, "` must be numeric."),
+        call. = FALSE
+      )
+    }
+    numericValue
+  })
+
+  names(coerced) <- names(x)
+  coerced
+}
+
 #' Get slider ranges for Tetmer UI
 #'
 #' Returns the current slider range settings used to initialise the
@@ -902,27 +951,34 @@ getProbs <- function(input){
 #' @examples
 #' sliderRanges()
 sliderRanges <- function(){
-  return(.sliderRanges)
+  sliderOverrides <- getOption("Tetmer.sliderRanges", list())
+  if (length(sliderOverrides) == 0) {
+    return(.defaultSliderRanges)
+  }
+
+  utils::modifyList(
+    .defaultSliderRanges,
+    normaliseSliderRanges(sliderOverrides)
+  )
 }
 
 #' Set slider ranges for Tetmer UI
 #'
 #' Updates the slider range settings used to initialise the Tetmer
-#' Shiny interface. Call this before \code{tetmer()} to customise
-#' the parameter ranges for your data.
+#' Shiny interface for the current R session. Call this before
+#' \code{tetmer()} to customise the parameter ranges for your data.
 #'
-#' @param x A named list of slider range values in the same format
-#'   as returned by \code{sliderRanges}
+#' @param x A named list of slider range overrides. Names must match
+#'   those returned by \code{sliderRanges}. Values must be numeric.
 #' @return NULL, invisibly
 #' @export
 #' @examples
 #' \dontrun{
-#' ranges <- sliderRanges()
-#' ranges$kcovMax <- 500
-#' setSliderRanges(ranges)
+#' setSliderRanges(list(kcovMax = 500, ymax = 3))
 #' }
 setSliderRanges <- function(x){
-  assignInMyNamespace(".sliderRanges", x)
+  options(Tetmer.sliderRanges = normaliseSliderRanges(x))
+  invisible(NULL)
 }
 
 #' Enable the segregating allotetraploid model
@@ -933,6 +989,7 @@ setSliderRanges <- function(x){
 #' with \code{tetmer()}.
 #'
 #' @return NULL, invisibly
+#' @importFrom utils assignInMyNamespace
 #' @export
 #' @examples
 #' \dontrun{
@@ -940,7 +997,7 @@ setSliderRanges <- function(x){
 #' tetmer(E028)
 #' }
 allowSegTet <- function(){
-  assignInMyNamespace("modelClasses",
+  utils::assignInMyNamespace("modelClasses",
     list("Diploid" = "d",
          "Triploid (aaa)" = "traaa",
          "Triploid (aab)" = "traab",

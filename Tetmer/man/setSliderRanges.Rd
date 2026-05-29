@@ -7,21 +7,19 @@
 setSliderRanges(x)
 }
 \arguments{
-\item{x}{A named list of slider range values in the same format
-as returned by \code{sliderRanges}}
+\item{x}{A named list of slider range overrides. Names must match
+those returned by \code{sliderRanges}. Values must be numeric.}
 }
 \value{
 NULL, invisibly
 }
 \description{
 Updates the slider range settings used to initialise the Tetmer
-Shiny interface. Call this before \code{tetmer()} to customise
-the parameter ranges for your data.
+Shiny interface for the current R session. Call this before
+\code{tetmer()} to customise the parameter ranges for your data.
 }
 \examples{
 \dontrun{
-ranges <- sliderRanges()
-ranges$kcovMax <- 500
-setSliderRanges(ranges)
+setSliderRanges(list(kcovMax = 500, ymax = 3))
 }
 }
