@@ -110,12 +110,41 @@ tetServer <- function(input, output, session, initialSpec) {
         )
         return()
       }
-      rv$model     <- input$mod
+      rv$model <- input$mod
       addvertlines(input, rv$optimised)
-      pointsFit(input, rv$optimised, probs = probs, factors = factors)
-      pointsExtrap(input, rv$optimised, probs = probs, factors = factors)
-      pointsContam(input, rv$optimised, rv$spec,
-                   probs = probs, factors = factors)
+
+      # Extract named parameters once
+      kcov   <- as.numeric(rv$optimised$par["cov"])
+      bias   <- as.numeric(rv$optimised$par["bias"])
+      theta  <- as.numeric(rv$optimised$par["theta"])
+      gs     <- as.numeric(rv$optimised$par["haplSize"])
+      diverg <- if(input$mod %in% c("tal","traab","tse")) as.numeric(rv$optimised$par["diverg"]) else NULL
+      pallo  <- if(input$mod == "tse") as.numeric(rv$optimised$par["pallo"]) else NULL
+
+      xmin <- input$axrange[1]
+      xmax <- input$axrange[2]
+
+      # Run evalModel ONCE over the full range (1 to xmax)
+      # This covers both the fit region (xmin:xmax) and extrapolation region (1:xmin)
+      fullFit <- evalModel(probs, factors,
+                           xmin = 1, xmax = xmax,
+                           kcov = kcov, bias = bias,
+                           theta = theta, gs = gs,
+                           diverg = diverg, pallo = pallo)
+
+      # Fit: model values within the fitting range
+      points(xmin:xmax, fullFit[xmin:xmax],
+             col = "red", type = "l", lty = 1, lwd = 2)
+
+      # Extrapolation: model values below the fitting range
+      points(1:xmin, fullFit[1:xmin],
+             col = "red", type = "l", lty = 2, lwd = 2)
+
+      # Contamination: difference between observed data and model below fitting range
+      points(1:xmin,
+             rv$spec@data$count[1:xmin] - fullFit[1:xmin],
+             type = "l", col = 4, lwd = 2)
+
       output$outText <- renderText(textOut(input, rv$optimised, rv$spec))
     }
   }
@@ -475,78 +504,34 @@ plotSpecApp <- function(input, spec){
 
 
 
-#' Plot the fit
+#' Plot the fit in manual mode
+#'
+#' Used in manual fitting mode only. In auto mode, evalModel is called
+#' once inside renderTetmerPlot and the result is sliced for fit,
+#' extrapolation and contamination directly.
 #'
 #' @param input From GUI
-#' @param optimised From fit (only supplied in auto mode)
 #' @param probs Expression for k-mer spectrum peak shapes
 #' @param factors Expression for k-mer spectrum peak factors
 #'
 #' @keywords internal
 #' @return NULL
-pointsFit <- function(input, optimised = 0, probs, factors){
+pointsFit <- function(input, probs, factors){
 
-  diverg <- if(input$mod %in% c("tal","traab","tse")) {
-    if(input$fitmod == "man") input$tdiverg else optimised$par["diverg"]
-  } else NULL
+  diverg <- if(input$mod %in% c("tal","traab","tse")) input$tdiverg else NULL
+  pallo  <- if(input$mod == "tse") input$pallo else NULL
 
-  pallo <- if(input$mod == "tse") {
-    if(input$fitmod == "man") input$pallo else optimised$par["pallo"]
-  } else NULL
-
-  if(input$fitmod == "man"){
-    points(
-      evalModel(probs, factors,
-                xmin = 1, xmax = input$txmax,
-                kcov = input$tkcov, bias = input$tbias,
-                theta = input$tth, gs = input$tyadj,
-                diverg = diverg, pallo = pallo),
-      col = "red", type = 'l', lty = 1, lwd = 2
-    )
-  }
-
-  if(input$fitmod == "auto"){
-    points(input$axrange[1]:input$axrange[2],
-      evalModel(probs, factors,
-                xmin = input$axrange[1], xmax = input$axrange[2],
-                kcov = optimised$par["cov"], bias = optimised$par["bias"],
-                theta = optimised$par["theta"], gs = optimised$par["haplSize"],
-                diverg = diverg, pallo = pallo),
-      col = "red", type = 'l', lty = 1, lwd = 2
-    )
-  }
-}
-
-pointsExtrap <- function(input, optimised, probs, factors){
-
-  diverg <- if(input$mod %in% c("tal", "traab","tse")) optimised$par["diverg"] else NULL
-  pallo  <- if(input$mod =="tse") optimised$par["pallo"] else NULL
-
-  points(1:input$axrange[1],
+  points(
     evalModel(probs, factors,
-              xmin = 1, xmax = input$axrange[1],
-              kcov = optimised$par["cov"], bias = optimised$par["bias"],
-              theta = optimised$par["theta"], gs = optimised$par["haplSize"],
+              xmin = 1, xmax = input$txmax,
+              kcov = input$tkcov, bias = input$tbias,
+              theta = input$tth, gs = input$tyadj,
               diverg = diverg, pallo = pallo),
-    col = "red", type = 'l', lty = 2, lwd = 2
+    col = "red", type = 'l', lty = 1, lwd = 2
   )
 }
 
-pointsContam <- function(input, optimised, spect, probs, factors){
 
-  diverg <- if(input$mod %in% c("tal","traab","tse")) optimised$par["diverg"] else NULL
-  pallo  <- if(input$mod == "tse") optimised$par["pallo"] else NULL
-
-  points(1:input$axrange[1],
-    spect@data$count[1:input$axrange[1]] -
-      evalModel(probs, factors,
-                xmin = 1, xmax = input$axrange[1],
-                kcov = optimised$par["cov"], bias = optimised$par["bias"],
-                theta = optimised$par["theta"], gs = optimised$par["haplSize"],
-                diverg = diverg, pallo = pallo),
-    type = 'l', col = 4, lwd = 2
-  )
-}
 
 #' Generate text for Tetmer window
 #'
@@ -845,8 +830,8 @@ getFactors <- function(input){
 
 #' Evaluate the expected k-mer spectrum
 #'
-#' Core computation shared across pointsFit, pointsExtrap,
-#' pointsContam and makeMinFun. Evaluates the model expressions
+#' Core computation used by pointsFit (manual mode) and directly
+#' in renderTetmerPlot (auto mode). Evaluates the model expressions
 #' and returns the expected k-mer counts.
 #'
 #' @param probs Expression for peak shapes
