@@ -42,8 +42,8 @@ evalModel(
 Numeric vector of expected k-mer counts
 }
 \description{
-Core computation shared across pointsFit, pointsExtrap,
-pointsContam and makeMinFun. Evaluates the model expressions
+Core computation used by pointsFit (manual mode) and directly
+in renderTetmerPlot (auto mode). Evaluates the model expressions
 and returns the expected k-mer counts.
 }
 \keyword{internal}

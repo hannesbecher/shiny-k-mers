@@ -2,20 +2,20 @@
 % Please edit documentation in R/tetmer.R
 \name{pointsFit}
 \alias{pointsFit}
-\title{Plot the fit}
+\title{Plot the fit in manual mode}
 \usage{
-pointsFit(input, optimised = 0, probs, factors)
+pointsFit(input, probs, factors)
 }
 \arguments{
 \item{input}{From GUI}
-
-\item{optimised}{From fit (only supplied in auto mode)}
 
 \item{probs}{Expression for k-mer spectrum peak shapes}
 
 \item{factors}{Expression for k-mer spectrum peak factors}
 }
 \description{
-Plot the fit
+Used in manual fitting mode only. In auto mode, evalModel is called
+once inside renderTetmerPlot and the result is sliced for fit,
+extrapolation and contamination directly.
 }
 \keyword{internal}
