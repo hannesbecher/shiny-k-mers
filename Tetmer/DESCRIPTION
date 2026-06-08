@@ -11,7 +11,7 @@ Authors@R: c(
 Description: A shiny app for fitting population parameters to k-mer spectra generated from whole-genome DNA sequencing data.
 License: GPL (>= 3)
 Depends:
-    R (>= 2.10)
+    R (>= 3.5)
 Imports: shiny, graphics, methods, utils, stats
 Encoding: UTF-8
 LazyData: true
