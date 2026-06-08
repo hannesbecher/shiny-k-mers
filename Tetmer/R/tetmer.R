@@ -291,12 +291,15 @@ tetmer <- function(sp=E028){
 #' A stored Tetmer fit result
 #'
 #' Stores the result of a single Tetmer model fit, including the model type,
-#' fitted parameters, parameter ranges used in optimisation, convergence
-#' information, and the version of Tetmer used.
+#' fitted parameters, parameter ranges used in optimisation, the x range
+#' of the spectrum used for fitting, convergence information, and the
+#' version of Tetmer used.
 #'
 #' @slot model A string indicating the model type (e.g. "d", "tal", "tau")
 #' @slot par A named numeric vector of fitted parameters
 #' @slot ranges A named list of parameter ranges used in optimisation
+#' @slot xrange A numeric vector of length 2 giving the lower and upper
+#'   multiplicity bounds of the spectrum used for fitting
 #' @slot convergence A numeric indicating the convergence code from \code{optim}
 #' @slot value A numeric indicating the minimised objective function value
 #' @slot k A numeric indicating the k-mer length used
@@ -308,6 +311,7 @@ setClass("tetmerFit", slots = list(
   model       = "character",
   par         = "numeric",
   ranges      = "list",
+  xrange      = "numeric",
   convergence = "numeric",
   value       = "numeric",
   k           = "numeric",
@@ -367,6 +371,7 @@ setMethod("show", "tetmerFit", function(object){
   cat("Tetmer fit result:\n")
   cat("  Model:", object@model, "\n")
   cat("  k-mer length:", object@k, "\n")
+  cat("  x range used:", object@xrange[1], "--", object@xrange[2], "\n")
   cat("  Tetmer version:", object@version, "\n")
   cat("  Convergence:", object@convergence, "\n")
   cat("  Objective value:", object@value, "\n")
@@ -391,11 +396,10 @@ setMethod("show", "tetmerFit", function(object){
 #' @importFrom utils packageVersion
 makeFitRecord <- function(input, optimised, k){
   ranges <- list(
-    kcov   = input$akcov,
-    bias   = input$abias,
-    theta  = input$ath,
-    gs     = input$ayadj,
-    xrange = input$axrange
+    kcov  = input$akcov,
+    bias  = input$abias,
+    theta = input$ath,
+    gs    = input$ayadj
   )
   if(input$mod %in% c("tal", "traab", "tse")){
     ranges$diverg <- input$adiv
@@ -407,6 +411,7 @@ makeFitRecord <- function(input, optimised, k){
       model       = input$mod,
       par         = optimised$par,
       ranges      = ranges,
+      xrange      = as.numeric(input$axrange),
       convergence = optimised$convergence,
       value       = optimised$value,
       k           = k,
@@ -507,6 +512,69 @@ plot.spectrum <- function(x,
   plot(count ~ mult, data = x@data, main=main, xlab=xlab, ylab=ylab, ...)
 }
 
+
+#' Write a k-mer spectrum to a text file
+#'
+#' Writes a \code{spectrum} object to a plain text file in a human-readable
+#' format. The file uses \code{#} comment lines to store metadata (name, k,
+#' and any stored fits) followed by two columns: multiplicity and count.
+#' The format is compatible with \code{read.spectrum} and can be inspected
+#' with any text editor or scrolled through using \code{less}.
+#'
+#' @param x A \code{spectrum} object
+#' @param file A string giving the path to the output file, or a connection
+#' @param ... Additional arguments (currently unused)
+#'
+#' @return \code{NULL}, invisibly
+#' @export
+#' @importFrom utils write.table packageVersion
+#' @examples
+#' \dontrun{
+#' result <- tetmer(E030)
+#' write.spectrum(result, "E030_fitted.txt")
+#' }
+write.spectrum <- function(x, file, ...){
+  con <- file(file, open = "wt")
+  on.exit(close(con))
+
+  # -- Metadata header --
+  writeLines(paste0("# Tetmer spectrum file -- written by Tetmer v",
+                    packageVersion("Tetmer")), con)
+  writeLines(paste0("# name: ", x@name), con)
+  writeLines(paste0("# k: ",    x@k),    con)
+
+  # -- Stored fits --
+  nFits <- length(x@fits)
+  writeLines(paste0("# fits: ", nFits), con)
+  if(nFits > 0){
+    for(i in seq_len(nFits)){
+      fit <- x@fits[[i]]
+      writeLines(paste0("# fit.", i, ".model: ",       fit@model),       con)
+      writeLines(paste0("# fit.", i, ".k: ",           fit@k),           con)
+      writeLines(paste0("# fit.", i, ".version: ",     fit@version),     con)
+      writeLines(paste0("# fit.", i, ".convergence: ", fit@convergence), con)
+      writeLines(paste0("# fit.", i, ".value: ",       fit@value),       con)
+      writeLines(paste0("# fit.", i, ".xrange: ",
+                        paste(fit@xrange, collapse = " ")),               con)
+      for(nm in names(fit@par)){
+        writeLines(paste0("# fit.", i, ".par.", nm, ": ", fit@par[nm]), con)
+      }
+      for(nm in names(fit@ranges)){
+        vals <- fit@ranges[[nm]]
+        writeLines(paste0("# fit.", i, ".range.", nm, ": ",
+                          paste(vals, collapse = " ")), con)
+      }
+    }
+  }
+
+  # -- Spectrum data (two columns: mult count) --
+  writeLines("# mult count", con)
+  write.table(x@data, file = con,
+              col.names = FALSE, row.names = FALSE,
+              sep = " ", quote = FALSE)
+
+  invisible(NULL)
+}
 
 #' Add vertical lines to k-mer spectrum plot
 #'

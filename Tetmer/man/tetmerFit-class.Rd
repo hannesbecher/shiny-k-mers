@@ -6,8 +6,9 @@
 \title{A stored Tetmer fit result}
 \description{
 Stores the result of a single Tetmer model fit, including the model type,
-fitted parameters, parameter ranges used in optimisation, convergence
-information, and the version of Tetmer used.
+fitted parameters, parameter ranges used in optimisation, the x range
+of the spectrum used for fitting, convergence information, and the
+version of Tetmer used.
 }
 \section{Slots}{
 
@@ -17,6 +18,9 @@ information, and the version of Tetmer used.
 \item{\code{par}}{A named numeric vector of fitted parameters}
 
 \item{\code{ranges}}{A named list of parameter ranges used in optimisation}
+
+\item{\code{xrange}}{A numeric vector of length 2 giving the lower and upper
+multiplicity bounds of the spectrum used for fitting}
 
 \item{\code{convergence}}{A numeric indicating the convergence code from \code{optim}}
 
