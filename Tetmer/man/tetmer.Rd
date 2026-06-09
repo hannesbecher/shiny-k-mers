@@ -13,6 +13,6 @@ tetmer(sp = E028)
 Run the interactive Tetmer app
 }
 \examples{
-\dontrun{tetmer(E028)}
-\dontrun{tetmer(E030)}
+\dontrun{result <- tetmer(E028)}
+\dontrun{result <- tetmer(E030)}
 }

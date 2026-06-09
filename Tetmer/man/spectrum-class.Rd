@@ -15,5 +15,7 @@ A named k-mer spectrum class
 \item{\code{data}}{A \code{data.frame} with numeric columns \code{mult} and \code{count}.}
 
 \item{\code{k}}{A \code{numeric} indicating the k-mer length.}
+
+\item{\code{fits}}{A \code{list} of \code{tetmerFit} objects storing fit results.}
 }}
 

@@ -71,7 +71,7 @@ utils::globalVariables(c("E028", "initialSpec"))
 #' @importFrom shiny fluidPage titlePanel fluidRow column plotOutput
 #' @importFrom shiny verbatimTextOutput numericInput fileInput actionButton
 #' @importFrom shiny icon wellPanel h4 checkboxInput radioButtons
-#' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification
+#' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification runApp stopApp
 #' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
 tetServer <- function(input, output, session, initialSpec) {
@@ -110,41 +110,12 @@ tetServer <- function(input, output, session, initialSpec) {
         )
         return()
       }
-      rv$model <- input$mod
+      rv$model     <- input$mod
       addvertlines(input, rv$optimised)
-
-      # Extract named parameters once
-      kcov   <- as.numeric(rv$optimised$par["cov"])
-      bias   <- as.numeric(rv$optimised$par["bias"])
-      theta  <- as.numeric(rv$optimised$par["theta"])
-      gs     <- as.numeric(rv$optimised$par["haplSize"])
-      diverg <- if(input$mod %in% c("tal","traab","tse")) as.numeric(rv$optimised$par["diverg"]) else NULL
-      pallo  <- if(input$mod == "tse") as.numeric(rv$optimised$par["pallo"]) else NULL
-
-      xmin <- input$axrange[1]
-      xmax <- input$axrange[2]
-
-      # Run evalModel ONCE over the full range (1 to xmax)
-      # This covers both the fit region (xmin:xmax) and extrapolation region (1:xmin)
-      fullFit <- evalModel(probs, factors,
-                           xmin = 1, xmax = xmax,
-                           kcov = kcov, bias = bias,
-                           theta = theta, gs = gs,
-                           diverg = diverg, pallo = pallo)
-
-      # Fit: model values within the fitting range
-      points(xmin:xmax, fullFit[xmin:xmax],
-             col = "red", type = "l", lty = 1, lwd = 2)
-
-      # Extrapolation: model values below the fitting range
-      points(1:xmin, fullFit[1:xmin],
-             col = "red", type = "l", lty = 2, lwd = 2)
-
-      # Contamination: difference between observed data and model below fitting range
-      points(1:xmin,
-             rv$spec@data$count[1:xmin] - fullFit[1:xmin],
-             type = "l", col = 4, lwd = 2)
-
+      pointsFit(input, rv$optimised, probs = probs, factors = factors)
+      pointsExtrap(input, rv$optimised, probs = probs, factors = factors)
+      pointsContam(input, rv$optimised, rv$spec,
+                   probs = probs, factors = factors)
       output$outText <- renderText(textOut(input, rv$optimised, rv$spec))
     }
   }
@@ -153,27 +124,15 @@ tetServer <- function(input, output, session, initialSpec) {
     renderTetmerPlot()
   })
 
-  observeEvent(input$saveFit, {
-    outF <- paste0(getwd(), "/", rv$spec@name, ".fit.txt")
-    print(paste("Saving fit to", outF))
-    writeLines(
-      ifelse(input$fitmod == "man",
-             textOut(input, 0, rv$spec),
-             textOut(input, rv$optimised, rv$spec)),
-      con = outF
-    )
-  })
-
-  observeEvent(input$saveFitAs, {
-    outF <- file.choose(new = TRUE)
-    if (!endsWith(outF, "txt")) outF <- paste0(outF, ".txt")
-    print(paste("Saving fit to", outF))
-    writeLines(
-      ifelse(input$fitmod == "man",
-             textOut(input, 0, rv$spec),
-             textOut(input, rv$optimised, rv$spec)),
-      con = outF
-    )
+  observeEvent(input$done, {
+    # Build updated spectrum with fit stored (only if autofit was run)
+    if(!is.null(rv$optimised)){
+      fit     <- makeFitRecord(input, rv$optimised, rv$spec@k)
+      updated <- addFit(rv$spec, fit)
+    } else {
+      updated <- rv$spec
+    }
+    stopApp(updated)
   })
 
   observeEvent(input$histFile, {
@@ -212,8 +171,8 @@ makeUI <- function(spec){
               ),
               column(4,
                      fluidRow(
-                       actionButton("saveFit", "Save fit", icon=icon("save")),
-                       actionButton("saveFitAs", "Save fit as...", icon=icon("save"))
+                       actionButton("done", "Done", icon=icon("check"),
+                                    class="btn-success")
                      )
               )
 
@@ -317,26 +276,162 @@ makeUI <- function(spec){
 #' @return NULL
 #' @export
 #'
-#' @examples \dontrun{tetmer(E028)}
-#' \dontrun{tetmer(E030)}
+#' @examples \dontrun{result <- tetmer(E028)}
+#' \dontrun{result <- tetmer(E030)}
 tetmer <- function(sp=E028){
   spec   <- prepareSpectrum(sp)
   server <- function(input, output, session){
     tetServer(input, output, session, initialSpec = spec)
   }
-  shinyApp(ui = makeUI(spec), server = server)
+  # runApp returns the value passed to stopApp() -- i.e. the updated spectrum
+  result <- shiny::runApp(shinyApp(ui = makeUI(spec), server = server))
+  invisible(result)
 }
+
+#' A stored Tetmer fit result
+#'
+#' Stores the result of a single Tetmer model fit, including the model type,
+#' fitted parameters, parameter ranges used in optimisation, the x range
+#' of the spectrum used for fitting, convergence information, and the
+#' version of Tetmer used.
+#'
+#' @slot model A string indicating the model type (e.g. "d", "tal", "tau")
+#' @slot par A named numeric vector of fitted parameters
+#' @slot ranges A named list of parameter ranges used in optimisation
+#' @slot xrange A numeric vector of length 2 giving the lower and upper
+#'   multiplicity bounds of the spectrum used for fitting
+#' @slot convergence A numeric indicating the convergence code from \code{optim}
+#' @slot value A numeric indicating the minimised objective function value
+#' @slot k A numeric indicating the k-mer length used
+#' @slot version A string indicating the Tetmer version used
+#'
+#' @export
+#' @importFrom methods setClass
+setClass("tetmerFit", slots = list(
+  model       = "character",
+  par         = "numeric",
+  ranges      = "list",
+  xrange      = "numeric",
+  convergence = "numeric",
+  value       = "numeric",
+  k           = "numeric",
+  version     = "character"
+))
 
 #' A named k-mer spectrum class
 #'
 #' @slot name A string indicating the name of the spectrum (or sample)
-#'
 #' @slot data A \code{data.frame} with numeric columns \code{mult} and \code{count}.
 #' @slot k A \code{numeric} indicating the k-mer length.
+#' @slot fits A \code{list} of \code{tetmerFit} objects storing fit results.
 #'
 #' @export
 #' @importFrom methods setClass
-setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"))
+setClass("spectrum", slots = list(
+  name = "character",
+  data = "data.frame",
+  k    = "numeric",
+  fits = "list"
+))
+
+#' Show method for spectrum objects
+#'
+#' @param object A \code{spectrum} object
+#' @export
+#' @importFrom methods show
+setMethod("show", "spectrum", function(object){
+  cat("Tetmer spectrum:\n")
+  cat("  Name:", object@name, "\n")
+  if(object@k > 0){
+    cat("  k-mer length:", object@k, "\n")
+  } else {
+    cat("  k-mer length: not specified\n")
+  }
+  cat("  Multiplicity range:", min(object@data$mult),
+      "--", max(object@data$mult), "\n")
+  nFits <- length(object@fits)
+  if(nFits == 0){
+    cat("  Fits: none\n")
+  } else {
+    cat("  Fits:", nFits, "stored\n")
+    for(i in seq_len(nFits)){
+      fit <- object@fits[[i]]
+      cat("    Fit", i, "-- model:", fit@model,
+          "| convergence:", fit@convergence,
+          "| Tetmer version:", fit@version, "\n")
+    }
+  }
+})
+
+#' Show method for tetmerFit objects
+#'
+#' @param object A \code{tetmerFit} object
+#' @export
+setMethod("show", "tetmerFit", function(object){
+  cat("Tetmer fit result:\n")
+  cat("  Model:", object@model, "\n")
+  cat("  k-mer length:", object@k, "\n")
+  cat("  x range used:", object@xrange[1], "--", object@xrange[2], "\n")
+  cat("  Tetmer version:", object@version, "\n")
+  cat("  Convergence:", object@convergence, "\n")
+  cat("  Objective value:", object@value, "\n")
+  cat("  Parameters:\n")
+  for(nm in names(object@par)){
+    cat("   ", nm, ":", object@par[nm], "\n")
+  }
+})
+
+#' Create a fit record from the current app state
+#'
+#' Constructs a \code{tetmerFit} object from the current Shiny input
+#' and optimisation result.
+#'
+#' @param input Input from Shiny GUI
+#' @param optimised Result from \code{doOptimisation}
+#' @param k Numeric k-mer length
+#'
+#' @return A \code{tetmerFit} object
+#' @export
+#' @importFrom methods new
+#' @importFrom utils packageVersion
+makeFitRecord <- function(input, optimised, k){
+  ranges <- list(
+    kcov  = input$akcov,
+    bias  = input$abias,
+    theta = input$ath,
+    gs    = input$ayadj
+  )
+  if(input$mod %in% c("tal", "traab", "tse")){
+    ranges$diverg <- input$adiv
+  }
+  if(input$mod == "tse"){
+    ranges$pallo <- input$apallo
+  }
+  new("tetmerFit",
+      model       = input$mod,
+      par         = optimised$par,
+      ranges      = ranges,
+      xrange      = as.numeric(input$axrange),
+      convergence = optimised$convergence,
+      value       = optimised$value,
+      k           = k,
+      version     = as.character(packageVersion("Tetmer")))
+}
+
+#' Add a fit to a spectrum object
+#'
+#' Appends a \code{tetmerFit} object to the \code{fits} slot of a
+#' \code{spectrum} object.
+#'
+#' @param spec A \code{spectrum} object
+#' @param fit A \code{tetmerFit} object
+#'
+#' @return An updated \code{spectrum} object with the fit appended
+#' @export
+addFit <- function(spec, fit){
+  spec@fits <- c(spec@fits, list(fit))
+  return(spec)
+}
 
 #' Read in a k-mer spectrum
 #'
@@ -354,7 +449,7 @@ setClass("spectrum", slots=list(name="character", data="data.frame", k="numeric"
 #' @param ... keyword arguments to be passed to \code{read.table}
 #' @return A \code{spectrum} object
 #' @export
-#' @importFrom methods new
+#' @importFrom methods new .hasSlot
 #' @importFrom utils read.table
 #' @examples
 #' \dontrun{testdf <- data.frame(mult=1:100, count = 100:1)}
@@ -375,7 +470,8 @@ read.spectrum <- function(f,
   spc <- new("spectrum",
              name=nam,
              data=sp,
-             k=k
+             k=k,
+             fits=list()
   )
   if(no0==FALSE) {
     return(prepareSpectrum(spc))
@@ -416,6 +512,69 @@ plot.spectrum <- function(x,
   plot(count ~ mult, data = x@data, main=main, xlab=xlab, ylab=ylab, ...)
 }
 
+
+#' Write a k-mer spectrum to a text file
+#'
+#' Writes a \code{spectrum} object to a plain text file in a human-readable
+#' format. The file uses \code{#} comment lines to store metadata (name, k,
+#' and any stored fits) followed by two columns: multiplicity and count.
+#' The format is compatible with \code{read.spectrum} and can be inspected
+#' with any text editor or scrolled through using \code{less}.
+#'
+#' @param x A \code{spectrum} object
+#' @param file A string giving the path to the output file, or a connection
+#' @param ... Additional arguments (currently unused)
+#'
+#' @return \code{NULL}, invisibly
+#' @export
+#' @importFrom utils write.table packageVersion
+#' @examples
+#' \dontrun{
+#' result <- tetmer(E030)
+#' write.spectrum(result, "E030_fitted.txt")
+#' }
+write.spectrum <- function(x, file, ...){
+  con <- file(file, open = "wt")
+  on.exit(close(con))
+
+  # -- Metadata header --
+  writeLines(paste0("# Tetmer spectrum file -- written by Tetmer v",
+                    packageVersion("Tetmer")), con)
+  writeLines(paste0("# name: ", x@name), con)
+  writeLines(paste0("# k: ",    x@k),    con)
+
+  # -- Stored fits --
+  nFits <- length(x@fits)
+  writeLines(paste0("# fits: ", nFits), con)
+  if(nFits > 0){
+    for(i in seq_len(nFits)){
+      fit <- x@fits[[i]]
+      writeLines(paste0("# fit.", i, ".model: ",       fit@model),       con)
+      writeLines(paste0("# fit.", i, ".k: ",           fit@k),           con)
+      writeLines(paste0("# fit.", i, ".version: ",     fit@version),     con)
+      writeLines(paste0("# fit.", i, ".convergence: ", fit@convergence), con)
+      writeLines(paste0("# fit.", i, ".value: ",       fit@value),       con)
+      writeLines(paste0("# fit.", i, ".xrange: ",
+                        paste(fit@xrange, collapse = " ")),               con)
+      for(nm in names(fit@par)){
+        writeLines(paste0("# fit.", i, ".par.", nm, ": ", fit@par[nm]), con)
+      }
+      for(nm in names(fit@ranges)){
+        vals <- fit@ranges[[nm]]
+        writeLines(paste0("# fit.", i, ".range.", nm, ": ",
+                          paste(vals, collapse = " ")), con)
+      }
+    }
+  }
+
+  # -- Spectrum data (two columns: mult count) --
+  writeLines("# mult count", con)
+  write.table(x@data, file = con,
+              col.names = FALSE, row.names = FALSE,
+              sep = " ", quote = FALSE)
+
+  invisible(NULL)
+}
 
 #' Add vertical lines to k-mer spectrum plot
 #'
@@ -504,34 +663,78 @@ plotSpecApp <- function(input, spec){
 
 
 
-#' Plot the fit in manual mode
-#'
-#' Used in manual fitting mode only. In auto mode, evalModel is called
-#' once inside renderTetmerPlot and the result is sliced for fit,
-#' extrapolation and contamination directly.
+#' Plot the fit
 #'
 #' @param input From GUI
+#' @param optimised From fit (only supplied in auto mode)
 #' @param probs Expression for k-mer spectrum peak shapes
 #' @param factors Expression for k-mer spectrum peak factors
 #'
 #' @keywords internal
 #' @return NULL
-pointsFit <- function(input, probs, factors){
+pointsFit <- function(input, optimised = 0, probs, factors){
 
-  diverg <- if(input$mod %in% c("tal","traab","tse")) input$tdiverg else NULL
-  pallo  <- if(input$mod == "tse") input$pallo else NULL
+  diverg <- if(input$mod %in% c("tal","traab","tse")) {
+    if(input$fitmod == "man") input$tdiverg else optimised$par["diverg"]
+  } else NULL
 
-  points(
+  pallo <- if(input$mod == "tse") {
+    if(input$fitmod == "man") input$pallo else optimised$par["pallo"]
+  } else NULL
+
+  if(input$fitmod == "man"){
+    points(
+      evalModel(probs, factors,
+                xmin = 1, xmax = input$txmax,
+                kcov = input$tkcov, bias = input$tbias,
+                theta = input$tth, gs = input$tyadj,
+                diverg = diverg, pallo = pallo),
+      col = "red", type = 'l', lty = 1, lwd = 2
+    )
+  }
+
+  if(input$fitmod == "auto"){
+    points(input$axrange[1]:input$axrange[2],
+      evalModel(probs, factors,
+                xmin = input$axrange[1], xmax = input$axrange[2],
+                kcov = optimised$par["cov"], bias = optimised$par["bias"],
+                theta = optimised$par["theta"], gs = optimised$par["haplSize"],
+                diverg = diverg, pallo = pallo),
+      col = "red", type = 'l', lty = 1, lwd = 2
+    )
+  }
+}
+
+pointsExtrap <- function(input, optimised, probs, factors){
+
+  diverg <- if(input$mod %in% c("tal", "traab","tse")) optimised$par["diverg"] else NULL
+  pallo  <- if(input$mod =="tse") optimised$par["pallo"] else NULL
+
+  points(1:input$axrange[1],
     evalModel(probs, factors,
-              xmin = 1, xmax = input$txmax,
-              kcov = input$tkcov, bias = input$tbias,
-              theta = input$tth, gs = input$tyadj,
+              xmin = 1, xmax = input$axrange[1],
+              kcov = optimised$par["cov"], bias = optimised$par["bias"],
+              theta = optimised$par["theta"], gs = optimised$par["haplSize"],
               diverg = diverg, pallo = pallo),
-    col = "red", type = 'l', lty = 1, lwd = 2
+    col = "red", type = 'l', lty = 2, lwd = 2
   )
 }
 
+pointsContam <- function(input, optimised, spect, probs, factors){
 
+  diverg <- if(input$mod %in% c("tal","traab","tse")) optimised$par["diverg"] else NULL
+  pallo  <- if(input$mod == "tse") optimised$par["pallo"] else NULL
+
+  points(1:input$axrange[1],
+    spect@data$count[1:input$axrange[1]] -
+      evalModel(probs, factors,
+                xmin = 1, xmax = input$axrange[1],
+                kcov = optimised$par["cov"], bias = optimised$par["bias"],
+                theta = optimised$par["theta"], gs = optimised$par["haplSize"],
+                diverg = diverg, pallo = pallo),
+    type = 'l', col = 4, lwd = 2
+  )
+}
 
 #' Generate text for Tetmer window
 #'
@@ -673,6 +876,8 @@ prepareSpectrum <- function(spe){
   allMults <- data.frame(mult=1:maxMult)
   sp@data <- merge(allMults, sp@data, on="mult", all.x=TRUE)
   sp@data[is.na(sp@data[, 2]), 2] <- 0
+  # Initialise fits slot if not present (e.g. old spectrum objects)
+  if(!.hasSlot(sp, "fits")) sp@fits <- list()
   return(sp)
 }
 
@@ -830,8 +1035,8 @@ getFactors <- function(input){
 
 #' Evaluate the expected k-mer spectrum
 #'
-#' Core computation used by pointsFit (manual mode) and directly
-#' in renderTetmerPlot (auto mode). Evaluates the model expressions
+#' Core computation shared across pointsFit, pointsExtrap,
+#' pointsContam and makeMinFun. Evaluates the model expressions
 #' and returns the expected k-mer counts.
 #'
 #' @param probs Expression for peak shapes
@@ -1039,5 +1244,6 @@ makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
   return(new("spectrum",
              name=nam,
              data=data.frame(mult=integer(0), count=integer(0)),
-             k=k))
+             k=k,
+             fits=list()))
 }
