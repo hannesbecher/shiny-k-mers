@@ -493,7 +493,7 @@ read.spectrum <- function(f,
 #' @param model A string indicating the model type: \code{"d"} (diploid),
 #'   \code{"tau"} (autotetraploid), \code{"tal"} (allotetraploid),
 #'   \code{"traaa"} (autotriploid), \code{"traab"} (allotriploid),
-#'   \code{"tse"} (segregating allotetraploid)
+#'   \code{"tse"} (segmental allotetraploid)
 #' @param kcov Numeric vector of length 2: lower and upper bounds for
 #'   monoploid k-mer coverage
 #' @param bias Numeric vector of length 2: lower and upper bounds for
@@ -1260,9 +1260,9 @@ setSliderRanges <- function(x){
   invisible(NULL)
 }
 
-#' Enable the segregating allotetraploid model
+#' Enable the segmental allotetraploid model
 #'
-#' Adds the segregating allotetraploid model (\code{"tse"}) to the list
+#' Adds the segmental allotetraploid model (\code{"tse"}) to the list
 #' of available models in the Tetmer UI. This model is hidden by default
 #' as it is experimental. Call this function before launching the app
 #' with \code{tetmer()}.
