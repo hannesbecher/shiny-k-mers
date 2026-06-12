@@ -2,7 +2,7 @@
 % Please edit documentation in R/tetmer.R
 \name{allowSegTet}
 \alias{allowSegTet}
-\title{Enable the segregating allotetraploid model}
+\title{Enable the segmental allotetraploid model}
 \usage{
 allowSegTet()
 }
@@ -10,7 +10,7 @@ allowSegTet()
 NULL, invisibly
 }
 \description{
-Adds the segregating allotetraploid model (\code{"tse"}) to the list
+Adds the segmental allotetraploid model (\code{"tse"}) to the list
 of available models in the Tetmer UI. This model is hidden by default
 as it is experimental. Call this function before launching the app
 with \code{tetmer()}.

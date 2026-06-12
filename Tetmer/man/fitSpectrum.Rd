@@ -23,7 +23,7 @@ fitSpectrum(
 \item{model}{A string indicating the model type: \code{"d"} (diploid),
 \code{"tau"} (autotetraploid), \code{"tal"} (allotetraploid),
 \code{"traaa"} (autotriploid), \code{"traab"} (allotriploid),
-\code{"tse"} (segregating allotetraploid)}
+\code{"tse"} (segmental allotetraploid)}
 
 \item{kcov}{Numeric vector of length 2: lower and upper bounds for
 monoploid k-mer coverage}
