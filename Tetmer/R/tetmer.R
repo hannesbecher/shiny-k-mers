@@ -483,6 +483,95 @@ read.spectrum <- function(f,
 
 
 
+#' Fit a population genetic model to a k-mer spectrum non-interactively
+#'
+#' Runs Tetmer's optimisation machinery outside the Shiny app, allowing
+#' scripted and batch analyses. Takes a spectrum object and parameter
+#' bounds and returns a \code{tetmerFit} object directly.
+#'
+#' @param spec A \code{spectrum} object
+#' @param model A string indicating the model type: \code{"d"} (diploid),
+#'   \code{"tau"} (autotetraploid), \code{"tal"} (allotetraploid),
+#'   \code{"traaa"} (autotriploid), \code{"traab"} (allotriploid),
+#'   \code{"tse"} (segmental allotetraploid)
+#' @param kcov Numeric vector of length 2: lower and upper bounds for
+#'   monoploid k-mer coverage
+#' @param bias Numeric vector of length 2: lower and upper bounds for
+#'   peak width (bias parameter)
+#' @param theta Numeric vector of length 2: lower and upper bounds for
+#'   log10 of theta per k-mer
+#' @param gs Numeric vector of length 2: lower and upper bounds for
+#'   log10 of haploid genome size in Mbp (e.g. \code{c(6, 9)})
+#' @param xrange Numeric vector of length 2: lower and upper multiplicity
+#'   bounds of the spectrum to use for fitting
+#' @param diverg Numeric vector of length 2: lower and upper bounds for
+#'   divergence time T in units of 2Ne (allopolyploid models only).
+#'   Defaults to \code{c(0.1, 100)}.
+#' @param pallo Numeric vector of length 2: lower and upper bounds for
+#'   proportion allotetraploid (\code{"tse"} model only).
+#'   Defaults to \code{c(0.01, 0.99)}.
+#' @param maxAttempts Integer, maximum number of optimisation attempts
+#'   with random restarts. Defaults to 5.
+#'
+#' @return A \code{tetmerFit} object, or \code{NULL} if all optimisation
+#'   attempts failed
+#' @export
+#' @examples
+#' \dontrun{
+#' fit <- fitSpectrum(E030,
+#'                   model  = "d",
+#'                   kcov   = c(5, 100),
+#'                   bias   = c(-5, -1),
+#'                   theta  = c(-3, 0),
+#'                   gs     = c(6, 9),
+#'                   xrange = c(45, 200))
+#' fit
+#' spec <- addFit(E030, fit)
+#' write.spectrum(spec, "E030_fitted.txt")
+#' }
+fitSpectrum <- function(spec,
+                        model,
+                        kcov,
+                        bias,
+                        theta,
+                        gs,
+                        xrange,
+                        diverg      = c(0.1, 100),
+                        pallo       = c(0.01, 0.99),
+                        maxAttempts = 5) {
+
+  # Build a minimal input list mimicking the Shiny input structure
+  # so that existing helper functions can be reused without modification
+  input <- list(
+    fitmod  = "auto",
+    mod     = model,
+    akcov   = kcov,
+    abias   = bias,
+    ath     = theta,
+    ayadj   = gs,
+    axrange = xrange,
+    adiv    = diverg,
+    apallo  = pallo
+  )
+
+  probs   <- getProbs(input)
+  factors <- getFactors(input)
+  minFun  <- makeMinFun(input, probs, factors)
+  sv      <- getStartingVals(input)
+
+  result  <- doOptimisation(input, spec, minFun, sv,
+                            maxAttempts = maxAttempts)
+
+  if(is.null(result)){
+    warning("fitSpectrum: optimisation failed after ",
+            maxAttempts, " attempts -- try adjusting the parameter ranges.")
+    return(NULL)
+  }
+
+  return(makeFitRecord(input, result, spec@k))
+}
+
+
 #' Plot a k-mer spectrum
 #'
 #' Uses the plot function to generate a scatter plot of a k-mer spectrum.
@@ -1171,9 +1260,9 @@ setSliderRanges <- function(x){
   invisible(NULL)
 }
 
-#' Enable the segregating allotetraploid model
+#' Enable the segmental allotetraploid model
 #'
-#' Adds the segregating allotetraploid model (\code{"tse"}) to the list
+#' Adds the segmental allotetraploid model (\code{"tse"}) to the list
 #' of available models in the Tetmer UI. This model is hidden by default
 #' as it is experimental. Call this function before launching the app
 #' with \code{tetmer()}.
