@@ -7,7 +7,7 @@
   txmin   = 5,
   tymax   = 10000,
   tkcov   = 15,
-  tbias   = -1.8,
+  tvf     = 2,
   tth     = 0.04,
   tyadj   = 200,
   tdiverg = 30,
@@ -17,8 +17,8 @@
   agsh    = 9,
   akcovl  = 10,
   akcovh  = 100,
-  abiasl  = -5,
-  abiash  = -3,
+  avfl    = 1,
+  avfh    = 10,
   athl    = -2,
   athh    = 0.6,
   adivl   = 0.1,
@@ -33,8 +33,8 @@
                              gsMax=10,
                              kcovMin=5,
                              kcovMax=300,
-                             biasMin=-6,
-                             biasMax=2,
+                             vfMin=1,
+                             vfMax=100,
                              thMin=-4,
                              thMax=1,
                              divMin=0.001,
@@ -204,7 +204,8 @@ makeUI <- function(spec){
                                               wellPanel(
                                                 h4("3rd: Param ranges"),
                                                 numericInput('tkcov', 'Monoploid k-mer multiplicity', .tetmerDefaults$tkcov),
-                                                numericInput('tbias', 'Peak width', .tetmerDefaults$tbias),
+                                                numericInput('tvf', 'Variance factor (vf)', .tetmerDefaults$tvf,
+                                                             min = 1, step = 0.1),
                                                 numericInput('tth', 'theta', .tetmerDefaults$tth),
                                                 numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .tetmerDefaults$tyadj)
                                               ))),
@@ -235,9 +236,9 @@ makeUI <- function(spec){
                                                         sliderInput('akcov', 'k-mer  multiplicity',
                                                                     min=currentSliderRanges$kcovMin, max = currentSliderRanges$kcovMax,
                                                                     value=c(.tetmerDefaults$akcovl, .tetmerDefaults$akcovh)),
-                                                        sliderInput('abias', 'Peak width',
-                                                                    min=currentSliderRanges$biasMin, max = currentSliderRanges$biasMax,
-                                                                    value=c(.tetmerDefaults$abiasl, .tetmerDefaults$abiash), step = 0.1),
+                                                        sliderInput('avf', 'Variance factor (vf)',
+                                                                    min=currentSliderRanges$vfMin, max = currentSliderRanges$vfMax,
+                                                                    value=c(.tetmerDefaults$avfl, .tetmerDefaults$avfh), step = 0.1),
                                                         sliderInput('ath', "log10 of theta",
                                                                     min=currentSliderRanges$thMin, max = currentSliderRanges$thMax, step = 0.05,
                                                                     value=c(.tetmerDefaults$athl, .tetmerDefaults$athh)),
@@ -397,7 +398,7 @@ setMethod("show", "tetmerFit", function(object){
 makeFitRecord <- function(input, optimised, k){
   ranges <- list(
     kcov  = input$akcov,
-    bias  = input$abias,
+    vf  = input$avf,
     theta = input$ath,
     gs    = input$ayadj
   )
@@ -496,8 +497,8 @@ read.spectrum <- function(f,
 #'   \code{"tse"} (segmental allotetraploid)
 #' @param kcov Numeric vector of length 2: lower and upper bounds for
 #'   monoploid k-mer coverage
-#' @param bias Numeric vector of length 2: lower and upper bounds for
-#'   peak width (bias parameter)
+#' @param vf Numeric vector of length 2: lower and upper bounds for
+#'   variance factor (\\eqn{vf}, where variance is \\eqn{vf} times the mean)
 #' @param theta Numeric vector of length 2: lower and upper bounds for
 #'   log10 of theta per k-mer
 #' @param gs Numeric vector of length 2: lower and upper bounds for
@@ -521,7 +522,7 @@ read.spectrum <- function(f,
 #' fit <- fitSpectrum(E030,
 #'                   model  = "d",
 #'                   kcov   = c(5, 100),
-#'                   bias   = c(-5, -1),
+#'                   vf     = c(1, 100),
 #'                   theta  = c(-3, 0),
 #'                   gs     = c(6, 9),
 #'                   xrange = c(45, 200))
@@ -532,7 +533,7 @@ read.spectrum <- function(f,
 fitSpectrum <- function(spec,
                         model,
                         kcov,
-                        bias,
+                        vf,
                         theta,
                         gs,
                         xrange,
@@ -546,7 +547,7 @@ fitSpectrum <- function(spec,
     fitmod  = "auto",
     mod     = model,
     akcov   = kcov,
-    abias   = bias,
+    avf   = vf,
     ath     = theta,
     ayadj   = gs,
     axrange = xrange,
@@ -775,7 +776,7 @@ pointsFit <- function(input, optimised = 0, probs, factors){
     points(
       evalModel(probs, factors,
                 xmin = 1, xmax = input$txmax,
-                kcov = input$tkcov, bias = input$tbias,
+                kcov = input$tkcov, vf = input$tvf,
                 theta = input$tth, gs = input$tyadj,
                 diverg = diverg, pallo = pallo),
       col = "red", type = 'l', lty = 1, lwd = 2
@@ -786,7 +787,7 @@ pointsFit <- function(input, optimised = 0, probs, factors){
     points(input$axrange[1]:input$axrange[2],
       evalModel(probs, factors,
                 xmin = input$axrange[1], xmax = input$axrange[2],
-                kcov = optimised$par["cov"], bias = optimised$par["bias"],
+                kcov = optimised$par["cov"], vf = optimised$par["vf"],
                 theta = optimised$par["theta"], gs = optimised$par["haplSize"],
                 diverg = diverg, pallo = pallo),
       col = "red", type = 'l', lty = 1, lwd = 2
@@ -802,7 +803,7 @@ pointsExtrap <- function(input, optimised, probs, factors){
   points(1:input$axrange[1],
     evalModel(probs, factors,
               xmin = 1, xmax = input$axrange[1],
-              kcov = optimised$par["cov"], bias = optimised$par["bias"],
+              kcov = optimised$par["cov"], vf = optimised$par["vf"],
               theta = optimised$par["theta"], gs = optimised$par["haplSize"],
               diverg = diverg, pallo = pallo),
     col = "red", type = 'l', lty = 2, lwd = 2
@@ -818,7 +819,7 @@ pointsContam <- function(input, optimised, spect, probs, factors){
     spect@data$count[1:input$axrange[1]] -
       evalModel(probs, factors,
                 xmin = 1, xmax = input$axrange[1],
-                kcov = optimised$par["cov"], bias = optimised$par["bias"],
+                kcov = optimised$par["cov"], vf = optimised$par["vf"],
                 theta = optimised$par["theta"], gs = optimised$par["haplSize"],
                 diverg = diverg, pallo = pallo),
     type = 'l', col = 4, lwd = 2
@@ -860,7 +861,7 @@ textOut <- function(input, optimised, spec){
   if(input$fitmod == "man"){
 
     kcov   <- input$tkcov
-    bias   <- input$tbias
+    vf   <- input$tvf
     theta  <- input$tth
     gs     <- input$tyadj
     diverg <- input$tdiverg
@@ -873,7 +874,7 @@ textOut <- function(input, optimised, spec){
       "\n      theta per k-mer: ", theta,
       perNuc(theta),
       "\n     non-rep GS (Mbp): ", gs,
-      "\n    bias (peak width): ", bias
+      "\n variance factor (vf): ", vf
     )
 
     if(input$mod %in% c("traab", "tal", "tse")){
@@ -895,7 +896,7 @@ textOut <- function(input, optimised, spec){
 
     # Extract named parameters -- no magic numbers
     kcov   <- optimised$par["cov"]
-    bias   <- optimised$par["bias"]
+    vf   <- optimised$par["vf"]
     theta  <- optimised$par["theta"]
     gs     <- optimised$par["haplSize"]
     diverg <- optimised$par["diverg"]
@@ -908,7 +909,7 @@ textOut <- function(input, optimised, spec){
       "\n      theta per k-mer: ", round(theta, 4),
       perNuc(theta),
       "\n     non-rep GS (Mbp): ", round(gs, 1),
-      "\n    bias (peak width): ", round(bias, 1)
+      "\n variance factor (vf): ", round(vf, 2)
     )
 
     if(input$mod %in% c("traab", "tal", "tse")){
@@ -931,7 +932,7 @@ textOut <- function(input, optimised, spec){
       "\n  monoploid k-mer cov: ", input$akcov[1], " ", input$akcov[2],
       "\nlog10 theta per k-mer: ", input$ath[1], " ", input$ath[2],
       "\n     non-rep GS (Mbp): ", input$ayadj[1], " ", input$ayadj[2],
-      "\n    bias (peak width): ", input$abias[1], " ", input$abias[2],
+      "\n variance factor (vf): ", input$avf[1], " ", input$avf[2],
       "\n              x range: ", input$axrange[1], " ", input$axrange[2]
     )
 
@@ -991,7 +992,7 @@ makeMinFun <- function(input, probs, factors){
       (spec@data$count[xlimits[1]:xlimits[2]] -
          evalModel(probs, factors,
                    xmin = xlimits[1], xmax = xlimits[2],
-                   kcov = x[1], bias = x[2],
+                   kcov = x[1], vf = x[2],
                    theta = x[3], gs = x[4],
                    diverg = diverg, pallo = pallo)) ^ 2
     )
@@ -1008,7 +1009,7 @@ getStartingVals <- function(input){
   if(input$mod %in% c("d", "tau", "traaa")){
     return(c(
       cov      = (input$akcov[1]+input$akcov[2])/2,
-      bias     = (input$abias[1]+input$abias[2])/2,
+      vf     = (input$avf[1]+input$avf[2])/2,
       theta    = (10^input$ath[1]+10^input$ath[2])/2,
       haplSize = (10^((input$ayadj[1]-6))+10^((input$ayadj[2]-6)))/2
     ))
@@ -1016,7 +1017,7 @@ getStartingVals <- function(input){
   if(input$mod %in% c("tal", "traab")){
     return(c(
       cov      = (input$akcov[1]+input$akcov[2])/2,
-      bias     = (input$abias[1]+input$abias[2])/2,
+      vf     = (input$avf[1]+input$avf[2])/2,
       theta    = (10^input$ath[1]+10^input$ath[2])/2,
       haplSize = (10^(input$ayadj[1]-6)+10^(input$ayadj[2]-6))/2,
       diverg   = (input$adiv[1]+input$adiv[2])/2
@@ -1025,7 +1026,7 @@ getStartingVals <- function(input){
   if(input$mod == "tse"){
     return(c(
       cov      = (input$akcov[1]+input$akcov[2])/2,
-      bias     = (input$abias[1]+input$abias[2])/2,
+      vf     = (input$avf[1]+input$avf[2])/2,
       theta    = (10^input$ath[1]+10^input$ath[2])/2,
       haplSize = (10^(input$ayadj[1]-6)+10^(input$ayadj[2]-6))/2,
       diverg   = (input$adiv[1]+input$adiv[2])/2,
@@ -1053,17 +1054,17 @@ doOptimisation <- function(input, sp, minFun, startingVals, maxAttempts = 5){
 
   # Define bounds based on model
   if(input$mod %in% c("tal", "traab")){
-    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1])
-    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2])
-    parNames <- c("cov", "bias", "theta", "haplSize", "diverg")
+    lower <- c(input$akcov[1], input$avf[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1])
+    upper <- c(input$akcov[2], input$avf[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2])
+    parNames <- c("cov", "vf", "theta", "haplSize", "diverg")
   } else if(input$mod == "tse"){
-    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1])
-    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2])
-    parNames <- c("cov", "bias", "theta", "haplSize", "diverg", "pallo")
+    lower <- c(input$akcov[1], input$avf[1], 10^input$ath[1], 10^(input$ayadj[1]-6), input$adiv[1], input$apallo[1])
+    upper <- c(input$akcov[2], input$avf[2], 10^input$ath[2], 10^(input$ayadj[2]-6), input$adiv[2], input$apallo[2])
+    parNames <- c("cov", "vf", "theta", "haplSize", "diverg", "pallo")
   } else {
-    lower <- c(input$akcov[1], input$abias[1], 10^input$ath[1], 10^(input$ayadj[1]-6))
-    upper <- c(input$akcov[2], input$abias[2], 10^input$ath[2], 10^(input$ayadj[2]-6))
-    parNames <- c("cov", "bias", "theta", "haplSize")
+    lower <- c(input$akcov[1], input$avf[1], 10^input$ath[1], 10^(input$ayadj[1]-6))
+    upper <- c(input$akcov[2], input$avf[2], 10^input$ath[2], 10^(input$ayadj[2]-6))
+    parNames <- c("cov", "vf", "theta", "haplSize")
   }
 
   bestResult <- NULL
@@ -1133,7 +1134,8 @@ getFactors <- function(input){
 #' @param xmin Integer, lower x limit
 #' @param xmax Integer, upper x limit
 #' @param kcov Numeric, monoploid k-mer coverage
-#' @param bias Numeric, peak width parameter
+#' @param vf Numeric, variance factor (\\eqn{vf}, where variance is
+#'   \\eqn{vf} times the mean)
 #' @param theta Numeric, population-scaled mutation rate
 #' @param gs Numeric, haploid genome size in millions
 #' @param diverg Numeric, divergence time T (allopolyploids only)
@@ -1142,13 +1144,13 @@ getFactors <- function(input){
 #' @return Numeric vector of expected k-mer counts
 #' @keywords internal
 evalModel <- function(probs, factors, xmin, xmax,
-                      kcov, bias, theta, gs,
+                      kcov, vf, theta, gs,
                       diverg = NULL, pallo = NULL) {
 
   probsEnv <- list(txmin = as.numeric(xmin),
                    txmax = as.numeric(xmax),
                    tkcov = as.numeric(kcov),
-                   tbias = as.numeric(bias))
+                   tvf = as.numeric(vf))
 
   factorsEnv <- list(tth = as.numeric(theta))
   if (!is.null(diverg)) factorsEnv$tdiverg <- as.numeric(diverg)
@@ -1297,7 +1299,7 @@ makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
   optimised <- params$optimised
 
   kcov   <- optimised$par["cov"]
-  bias   <- optimised$par["bias"]
+  vf   <- optimised$par["vf"]
   theta  <- optimised$par["theta"]
   gs     <- optimised$par["haplSize"]
   diverg <- optimised$par["diverg"]
@@ -1307,7 +1309,7 @@ makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
     points(input$axrange[1]:input$axrange[2],
            evalModel(probs, factors,
                      xmin = input$axrange[1], xmax = input$axrange[2],
-                     kcov = kcov, bias = bias, theta = theta, gs = gs),
+                     kcov = kcov, vf = vf, theta = theta, gs = gs),
            col="red", type='l', lty=1, lwd=2
     )
   }
@@ -1315,7 +1317,7 @@ makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
     points(input$axrange[1]:input$axrange[2],
            evalModel(probs, factors,
                      xmin = input$axrange[1], xmax = input$axrange[2],
-                     kcov = kcov, bias = bias, theta = theta, gs = gs,
+                     kcov = kcov, vf = vf, theta = theta, gs = gs,
                      diverg = diverg),
            col="red", type='l', lty=1, lwd=2
     )
@@ -1324,7 +1326,7 @@ makeExpectedSpectrum <- function(params, modelType, nam="", k=0){
     points(input$axrange[1]:input$axrange[2],
            evalModel(probs, factors,
                      xmin = input$axrange[1], xmax = input$axrange[2],
-                     kcov = kcov, bias = bias, theta = theta, gs = gs,
+                     kcov = kcov, vf = vf, theta = theta, gs = gs,
                      diverg = diverg, pallo = pallo),
            col="red", type='l', lty=1, lwd=2
     )

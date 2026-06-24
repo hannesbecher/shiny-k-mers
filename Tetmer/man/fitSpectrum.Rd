@@ -8,7 +8,7 @@ fitSpectrum(
   spec,
   model,
   kcov,
-  bias,
+  vf,
   theta,
   gs,
   xrange,
@@ -28,8 +28,8 @@ fitSpectrum(
 \item{kcov}{Numeric vector of length 2: lower and upper bounds for
 monoploid k-mer coverage}
 
-\item{bias}{Numeric vector of length 2: lower and upper bounds for
-peak width (bias parameter)}
+\item{vf}{Numeric vector of length 2: lower and upper bounds for
+variance factor (\\eqn{vf}, where variance is \\eqn{vf} times the mean)}
 
 \item{theta}{Numeric vector of length 2: lower and upper bounds for
 log10 of theta per k-mer}
@@ -65,7 +65,7 @@ bounds and returns a \code{tetmerFit} object directly.
 fit <- fitSpectrum(E030,
                   model  = "d",
                   kcov   = c(5, 100),
-                  bias   = c(-5, -1),
+                  vf     = c(1, 100),
                   theta  = c(-3, 0),
                   gs     = c(6, 9),
                   xrange = c(45, 200))

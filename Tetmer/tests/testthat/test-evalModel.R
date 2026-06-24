@@ -14,7 +14,7 @@ test_that("evalModel returns correct length vector for diploid model", {
 
   result <- evalModel(probs, factors,
                       xmin = 1, xmax = 100,
-                      kcov = 30, bias = -1.8,
+                      kcov = 30, vf = 1.5,
                       theta = 0.04, gs = 200)
 
   expect_length(result, 100)
@@ -27,7 +27,7 @@ test_that("evalModel output is numeric and finite", {
 
   result <- evalModel(probs, factors,
                       xmin = 1, xmax = 100,
-                      kcov = 30, bias = -1.8,
+                      kcov = 30, vf = 1.5,
                       theta = 0.04, gs = 200)
 
   expect_true(is.numeric(result))
@@ -41,7 +41,7 @@ test_that("evalModel output is non-negative", {
 
   result <- evalModel(probs, factors,
                       xmin = 1, xmax = 100,
-                      kcov = 30, bias = -1.8,
+                      kcov = 30, vf = 1.5,
                       theta = 0.04, gs = 200)
 
   expect_true(all(result >= 0))
@@ -54,12 +54,12 @@ test_that("evalModel output scales linearly with genome size", {
 
   result1 <- evalModel(probs, factors,
                        xmin = 1, xmax = 100,
-                       kcov = 30, bias = -1.8,
+                       kcov = 30, vf = 1.5,
                        theta = 0.04, gs = 100)
 
   result2 <- evalModel(probs, factors,
                        xmin = 1, xmax = 100,
-                       kcov = 30, bias = -1.8,
+                       kcov = 30, vf = 1.5,
                        theta = 0.04, gs = 200)
 
   expect_equal(result2, result1 * 2)
@@ -73,12 +73,12 @@ test_that("evalModel diploid and autotetraploid models give different results", 
 
   result_dip <- evalModel(probs_dip, factors_dip,
                           xmin = 1, xmax = 100,
-                          kcov = 30, bias = -1.8,
+                          kcov = 30, vf = 1.5,
                           theta = 0.04, gs = 200)
 
   result_tet <- evalModel(probs_tet, factors_tet,
                           xmin = 1, xmax = 100,
-                          kcov = 30, bias = -1.8,
+                          kcov = 30, vf = 1.5,
                           theta = 0.04, gs = 200)
 
   expect_false(identical(result_dip, result_tet))
@@ -92,12 +92,12 @@ test_that("evalModel allotetraploid model requires diverg and gives different re
 
   result_aut <- evalModel(probs_aut, factors_aut,
                           xmin = 1, xmax = 100,
-                          kcov = 30, bias = -1.8,
+                          kcov = 30, vf = 1.5,
                           theta = 0.04, gs = 200)
 
   result_all <- evalModel(probs_all, factors_all,
                           xmin = 1, xmax = 100,
-                          kcov = 30, bias = -1.8,
+                          kcov = 30, vf = 1.5,
                           theta = 0.04, gs = 200,
                           diverg = 30)
 
@@ -111,12 +111,12 @@ test_that("evalModel sum increases with higher theta", {
 
   result_low <- evalModel(probs, factors,
                           xmin = 1, xmax = 200,
-                          kcov = 30, bias = -1.8,
+                          kcov = 30, vf = 1.5,
                           theta = 0.01, gs = 200)
 
   result_high <- evalModel(probs, factors,
                            xmin = 1, xmax = 200,
-                           kcov = 30, bias = -1.8,
+                           kcov = 30, vf = 1.5,
                            theta = 0.5, gs = 200)
 
   expect_gt(sum(result_high), sum(result_low))
@@ -128,11 +128,11 @@ test_that("evalModel works with named numeric inputs (strips names correctly)", 
   factors <- getFactors(input)
 
   named_kcov <- c(cov = 30)
-  named_bias <- c(bias = -1.8)
+  named_vf <- c(vf = 1.5)
 
   result <- evalModel(probs, factors,
                       xmin = 1, xmax = 50,
-                      kcov = named_kcov, bias = named_bias,
+                      kcov = named_kcov, vf = named_vf,
                       theta = 0.04, gs = 200)
 
   expect_length(result, 50)
@@ -154,7 +154,7 @@ test_that("evalModel diploid output has same length a E030 spectrum range", {
 
   result  <- evalModel(probs, factors,
                        xmin = xmin, xmax = xmax,
-                       kcov = 15, bias = -1.8,
+                       kcov = 15, vf = 1.5,
                        theta = 0.04, gs = 200)
 
   expect_length(result, xmax - xmin + 1)
@@ -169,7 +169,7 @@ test_that("evalModel diploid peak is near the sequencing coverage of E030", {
   # The homozygous (2x) peak should be the large peak
   result <- evalModel(probs, factors,
                       xmin = 1, xmax = 200,
-                      kcov = 27, bias = -1.8,
+                      kcov = 27, vf = 1.5,
                       theta = 0.01, gs = 200)
 
   # Peak of the homozygous component should be near 2*kcov = 54
@@ -187,7 +187,7 @@ test_that("evalModel allotetraploid output has same length as E028 spectrum rang
 
   result <- evalModel(probs, factors,
                       xmin = xmin, xmax = xmax,
-                      kcov = 15, bias = -1.8,
+                      kcov = 15, vf = 1.5,
                       theta = 0.04, gs = 200,
                       diverg = 30)
 
@@ -203,7 +203,7 @@ test_that("evalModel allotetraploid with high divergence has larger 2x peak than
 
   result  <- evalModel(probs, factors,
                        xmin = 1, xmax = 200, 
-                       kcov = 15, bias = -1.8,
+                       kcov = 15, vf = 1.5,
                        theta = 0.04, gs = 200,
                        diverg = 50)
 
@@ -220,7 +220,7 @@ test_that("evalModel diploid output is of the same order of magnitude as E030 da
 
   result  <- evalModel(probs, factors,
                        xmin = 45, xmax = 200,
-                       kcov = 57, bias = -1.8,
+                       kcov = 57, vf = 1.5,
                        theta = 0.004, gs = 200)
 
   observed <- E030@data$count[45:200]
@@ -242,7 +242,7 @@ test_that("evalModel allotetraploid fitted parameters reproduce E028 spectrum sh
   # theta ~ 0.04 per k-mer, T ~38, coverage ~15x, gs ~200 Mbp
   result <- evalModel(probs, factors,
                       xmin = 45, xmax = 200,
-                      kcov = 15, bias = -1.8,
+                      kcov = 15, vf = 1.5,
                       theta = 0.04, gs = 200,
                       diverg = 38)
 

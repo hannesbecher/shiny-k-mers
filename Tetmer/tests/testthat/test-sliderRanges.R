@@ -10,7 +10,7 @@ test_that("sliderRanges returns the expected default structure", {
   expected_names <- c(
     "gsMin", "gsMax",
     "kcovMin", "kcovMax",
-    "biasMin", "biasMax",
+    "vfMin", "vfMax",
     "thMin", "thMax",
     "divMin", "divMax",
     "xrangeMin", "xrangeMax",

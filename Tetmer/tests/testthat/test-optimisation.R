@@ -11,7 +11,7 @@ library(Tetmer)
 
 # Helper to create a minimal input list mimicking the Shiny UI
 makeAutoInput <- function(mod, kcovRange, thRange,
-                          gsRange, biasRange,
+                          gsRange, vfRange,
                           xrange, divRange = NULL,
                           palloRange = NULL) {
   inp <- list(
@@ -20,7 +20,7 @@ makeAutoInput <- function(mod, kcovRange, thRange,
     akcov   = kcovRange,
     ath     = thRange,
     ayadj   = gsRange,
-    abias   = biasRange,
+    avf     = vfRange,
     axrange = xrange
   )
   if (!is.null(divRange))   inp$adiv   <- divRange
@@ -40,7 +40,7 @@ test_that("doOptimisation on E030 (diploid) returns non-NULL result", {
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
     gsRange   = c(6, 9),
-    biasRange = c(-5, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
   probs   <- getProbs(input)
@@ -58,7 +58,7 @@ test_that("doOptimisation on E030 (diploid) has named parameters", {
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
     gsRange   = c(6, 9),
-    biasRange = c(-5, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
   probs   <- getProbs(input)
@@ -67,7 +67,7 @@ test_that("doOptimisation on E030 (diploid) has named parameters", {
   sv      <- getStartingVals(input)
   result  <- doOptimisation(input, E030, minFun, sv)
 
-  expect_named(result$par, c("cov", "bias", "theta", "haplSize"))
+  expect_named(result$par, c("cov", "vf", "theta", "haplSize"))
 })
 
 test_that("doOptimisation on E030 (diploid) estimates genome size within published range", {
@@ -76,7 +76,7 @@ test_that("doOptimisation on E030 (diploid) estimates genome size within publish
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
     gsRange   = c(6, 9),
-    biasRange = c(-5, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
   probs   <- getProbs(input)
@@ -98,7 +98,7 @@ test_that("doOptimisation on E030 (diploid) returns finite objective value", {
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
     gsRange   = c(6, 9),
-    biasRange = c(-5, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
   probs   <- getProbs(input)
@@ -116,7 +116,7 @@ test_that("doOptimisation on E030 (diploid) all parameters are positive", {
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
     gsRange   = c(6, 9),
-    biasRange = c(-5, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
   probs   <- getProbs(input)
@@ -125,8 +125,9 @@ test_that("doOptimisation on E030 (diploid) all parameters are positive", {
   sv      <- getStartingVals(input)
   result  <- doOptimisation(input, E030, minFun, sv)
 
-  # cov, theta, haplSize must be positive (bias can be negative)
+  # cov, vf, theta, haplSize must be positive
   expect_gt(result$par["cov"], 0)
+  expect_gt(result$par["vf"], 0)
   expect_gt(result$par["theta"], 0)
   expect_gt(result$par["haplSize"], 0)
 })
@@ -143,7 +144,7 @@ test_that("doOptimisation on E028 (allotetraploid) returns non-NULL result", {
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
     gsRange   = c(7, 9),
-    biasRange = c(-4, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
   )
@@ -162,7 +163,7 @@ test_that("doOptimisation on E028 (allotetraploid) has named parameters", {
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
     gsRange   = c(7, 9),
-    biasRange = c(-4, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
   )
@@ -172,7 +173,7 @@ test_that("doOptimisation on E028 (allotetraploid) has named parameters", {
   sv      <- getStartingVals(input)
   result  <- doOptimisation(input, E028, minFun, sv)
 
-  expect_named(result$par, c("cov", "bias", "theta", "haplSize", "diverg"))
+  expect_named(result$par, c("cov", "vf", "theta", "haplSize", "diverg"))
 })
 
 test_that("doOptimisation on E028 (allotetraploid) returns finite objective value", {
@@ -181,7 +182,7 @@ test_that("doOptimisation on E028 (allotetraploid) returns finite objective valu
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
     gsRange   = c(7, 9),
-    biasRange = c(-4, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
   )
@@ -200,7 +201,7 @@ test_that("doOptimisation on E028 (allotetraploid) all parameters are positive",
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
     gsRange   = c(7, 9),
-    biasRange = c(-4, -1),
+    vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
   )
@@ -211,6 +212,7 @@ test_that("doOptimisation on E028 (allotetraploid) all parameters are positive",
   result  <- doOptimisation(input, E028, minFun, sv)
 
   expect_gt(result$par["cov"],      0)
+  expect_gt(result$par["vf"],       0)
   expect_gt(result$par["theta"],    0)
   expect_gt(result$par["haplSize"], 0)
   expect_gt(result$par["diverg"],   0)

@@ -10,7 +10,7 @@ evalModel(
   xmin,
   xmax,
   kcov,
-  bias,
+  vf,
   theta,
   gs,
   diverg = NULL,
@@ -28,7 +28,8 @@ evalModel(
 
 \item{kcov}{Numeric, monoploid k-mer coverage}
 
-\item{bias}{Numeric, peak width parameter}
+\item{vf}{Numeric, variance factor (\\eqn{vf}, where variance is
+\\eqn{vf} times the mean)}
 
 \item{theta}{Numeric, population-scaled mutation rate}
 
