@@ -28,8 +28,8 @@ evalModel(
 
 \item{kcov}{Numeric, monoploid k-mer coverage}
 
-\item{vf}{Numeric, variance factor (\\eqn{vf}, where variance is
-\\eqn{vf} times the mean)}
+\item{vf}{Numeric, variance factor (vf), where variance equals
+vf times the mean}
 
 \item{theta}{Numeric, population-scaled mutation rate}
 

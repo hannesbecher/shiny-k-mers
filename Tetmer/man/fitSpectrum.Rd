@@ -29,7 +29,7 @@ fitSpectrum(
 monoploid k-mer coverage}
 
 \item{vf}{Numeric vector of length 2: lower and upper bounds for
-variance factor (\\eqn{vf}, where variance is \\eqn{vf} times the mean)}
+variance factor (vf), where variance equals vf times the mean}
 
 \item{theta}{Numeric vector of length 2: lower and upper bounds for
 log10 of theta per k-mer}

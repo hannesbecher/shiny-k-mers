@@ -498,7 +498,7 @@ read.spectrum <- function(f,
 #' @param kcov Numeric vector of length 2: lower and upper bounds for
 #'   monoploid k-mer coverage
 #' @param vf Numeric vector of length 2: lower and upper bounds for
-#'   variance factor (\\eqn{vf}, where variance is \\eqn{vf} times the mean)
+#'   variance factor (vf), where variance equals vf times the mean
 #' @param theta Numeric vector of length 2: lower and upper bounds for
 #'   log10 of theta per k-mer
 #' @param gs Numeric vector of length 2: lower and upper bounds for
@@ -1134,8 +1134,8 @@ getFactors <- function(input){
 #' @param xmin Integer, lower x limit
 #' @param xmax Integer, upper x limit
 #' @param kcov Numeric, monoploid k-mer coverage
-#' @param vf Numeric, variance factor (\\eqn{vf}, where variance is
-#'   \\eqn{vf} times the mean)
+#' @param vf Numeric, variance factor (vf), where variance equals
+#'   vf times the mean
 #' @param theta Numeric, population-scaled mutation rate
 #' @param gs Numeric, haploid genome size in millions
 #' @param diverg Numeric, divergence time T (allopolyploids only)
