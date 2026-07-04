@@ -67,17 +67,11 @@ utils::globalVariables(c("E028", "initialSpec"))
 #'
 #' @return NULL
 #' @importFrom stats optim runif
-#' @importFrom shiny reactiveValues renderPlot renderText observeEvent
-#' @importFrom shiny fluidPage titlePanel fluidRow column plotOutput
-#' @importFrom shiny verbatimTextOutput numericInput fileInput actionButton
-#' @importFrom shiny icon wellPanel h4 checkboxInput radioButtons
-#' @importFrom shiny conditionalPanel sliderInput shinyApp showNotification runApp stopApp
-#' @importFrom shiny updateNumericInput
 #' @importFrom graphics abline legend points text
 tetServer <- function(input, output, session, initialSpec) {
 
   # Reactive values -- session-scoped state, replaces all <<- assignments
-  rv <- reactiveValues(
+  rv <- shiny::reactiveValues(
     spec      = initialSpec,
     optimised = NULL,
     model     = NULL
@@ -92,7 +86,7 @@ tetServer <- function(input, output, session, initialSpec) {
       plotSpecApp(input, rv$spec)
       addvertlines(input)
       pointsFit(input, probs = probs, factors = factors)
-      output$outText <- renderText(textOut(input, 0, rv$spec))
+      output$outText <- shiny::renderText(textOut(input, 0, rv$spec))
       return()
     }
 
@@ -104,7 +98,7 @@ tetServer <- function(input, output, session, initialSpec) {
                                      minFun       = minFun,
                                      startingVals = startingVals)
       if(is.null(rv$optimised)){
-        showNotification(
+        shiny::showNotification(
           "Optimisation failed after multiple attempts -- try adjusting the parameter ranges.",
           type = "error", duration = 10
         )
@@ -116,15 +110,15 @@ tetServer <- function(input, output, session, initialSpec) {
       pointsExtrap(input, rv$optimised, probs = probs, factors = factors)
       pointsContam(input, rv$optimised, rv$spec,
                    probs = probs, factors = factors)
-      output$outText <- renderText(textOut(input, rv$optimised, rv$spec))
+      output$outText <- shiny::renderText(textOut(input, rv$optimised, rv$spec))
     }
   }
 
-  output$plot <- renderPlot({
+  output$plot <- shiny::renderPlot({
     renderTetmerPlot()
   })
 
-  observeEvent(input$done, {
+  shiny::observeEvent(input$done, {
     # Build updated spectrum with fit stored (only if autofit was run)
     if(!is.null(rv$optimised)){
       fit     <- makeFitRecord(input, rv$optimised, rv$spec@k)
@@ -132,10 +126,10 @@ tetServer <- function(input, output, session, initialSpec) {
     } else {
       updated <- rv$spec
     }
-    stopApp(updated)
+    shiny::stopApp(updated)
   })
 
-  observeEvent(input$histFile, {
+  shiny::observeEvent(input$histFile, {
     fPath <- input$histFile$datapath
     fName <- input$histFile$name
     rv$spec <- prepareSpectrum(
@@ -143,7 +137,7 @@ tetServer <- function(input, output, session, initialSpec) {
                     nam = strsplit(fName, "[.]")[[1]][[1]],
                     k = input$kVal)
     )
-    updateNumericInput(session, "kVal", value = rv$spec@k)
+    shiny::updateNumericInput(session, "kVal", value = rv$spec@k)
   })
 
 }
@@ -153,109 +147,109 @@ tetServer <- function(input, output, session, initialSpec) {
 
 makeUI <- function(spec){
   currentSliderRanges <- sliderRanges()
-  fluidPage(titlePanel("Tetmer v2.3.2"),
+  shiny::fluidPage(shiny::titlePanel("Tetmer v2.3.2"),
                     "Fitting population parameters to k-mer spectra (by Hannes Becher)",
-                    fluidRow(
-                      column(8, plotOutput('plot')),
-                      column(4,
-                             verbatimTextOutput("outText"),
+                    shiny::fluidRow(
+                      shiny::column(8, shiny::plotOutput('plot')),
+                      shiny::column(4,
+                             shiny::verbatimTextOutput("outText"),
 
                       )
                     ),
-            fluidRow(
-              column(4,
-                     numericInput("kVal", "Specify k-mer size before loading data", spec@k)
+            shiny::fluidRow(
+              shiny::column(4,
+                     shiny::numericInput("kVal", "Specify k-mer size before loading data", spec@k)
               ),
-              column(4,
-                     fileInput("histFile", "Choose or drop spectrum file")
+              shiny::column(4,
+                     shiny::fileInput("histFile", "Choose or drop spectrum file")
               ),
-              column(4,
-                     fluidRow(
-                       actionButton("done", "Done", icon=icon("check"),
+              shiny::column(4,
+                     shiny::fluidRow(
+                       shiny::actionButton("done", "Done", icon=shiny::icon("check"),
                                     class="btn-success")
                      )
               )
 
             ),
-                    fluidRow(
-                      column(3,
+                    shiny::fluidRow(
+                      shiny::column(3,
 
-                                              wellPanel(h4("1st: Select fitting mode and model"),
-                                                        checkboxInput("showData", "Show data", value = TRUE),
-                                                        radioButtons("fitmod", "Fitting mode",
+                                              shiny::wellPanel(shiny::h4("1st: Select fitting mode and model"),
+                                                        shiny::checkboxInput("showData", "Show data", value = TRUE),
+                                                        shiny::radioButtons("fitmod", "Fitting mode",
                                                                      c("Manual" = "man",
                                                                        "Autofit" = "auto")
                                                         ),
-                                                        radioButtons("mod", "Model", modelClasses
+                                                        shiny::radioButtons("mod", "Model", modelClasses
 
                                                         )
                                               )
 
                       ),
-                      column(3,
-                             conditionalPanel(condition = "input.fitmod == 'man'",
-                                              wellPanel(
-                                                h4("2nd: Adjust plotting area, make all data peaks visible"),
-                                                numericInput('txmax', 'Max multiplicity', .tetmerDefaults$txmax),
-                                                numericInput('tymax', 'y axis max (x1000)', .tetmerDefaults$tymax)
+                      shiny::column(3,
+                             shiny::conditionalPanel(condition = "input.fitmod == 'man'",
+                                              shiny::wellPanel(
+                                                shiny::h4("2nd: Adjust plotting area, make all data peaks visible"),
+                                                shiny::numericInput('txmax', 'Max multiplicity', .tetmerDefaults$txmax),
+                                                shiny::numericInput('tymax', 'y axis max (x1000)', .tetmerDefaults$tymax)
                                               ))),
-                      column(3,
-                             conditionalPanel(condition = "input.fitmod == 'man'",
-                                              wellPanel(
-                                                h4("3rd: Param ranges"),
-                                                numericInput('tkcov', 'Monoploid k-mer multiplicity', .tetmerDefaults$tkcov),
-                                                numericInput('tvf', 'Variance factor (vf)', .tetmerDefaults$tvf,
+                      shiny::column(3,
+                             shiny::conditionalPanel(condition = "input.fitmod == 'man'",
+                                              shiny::wellPanel(
+                                                shiny::h4("3rd: Param ranges"),
+                                                shiny::numericInput('tkcov', 'Monoploid k-mer multiplicity', .tetmerDefaults$tkcov),
+                                                shiny::numericInput('tvf', 'Variance factor (vf)', .tetmerDefaults$tvf,
                                                              min = 1, step = 0.1),
-                                                numericInput('tth', 'theta', .tetmerDefaults$tth),
-                                                numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .tetmerDefaults$tyadj)
+                                                shiny::numericInput('tth', 'theta', .tetmerDefaults$tth),
+                                                shiny::numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .tetmerDefaults$tyadj)
                                               ))),
-                      column(3,
-                             conditionalPanel(condition = "(input.fitmod == 'man') && (['tal', 'traab', 'tse'].includes(input.mod))",
-                                              wellPanel(h4("4th: Only allopolyploids, adjust sub-genome split time"),
-                                                        numericInput('tdiverg', 'T (in units of 2Ne)', .tetmerDefaults$tdiverg)
+                      shiny::column(3,
+                             shiny::conditionalPanel(condition = "(input.fitmod == 'man') && (['tal', 'traab', 'tse'].includes(input.mod))",
+                                              shiny::wellPanel(shiny::h4("4th: Only allopolyploids, adjust sub-genome split time"),
+                                                        shiny::numericInput('tdiverg', 'T (in units of 2Ne)', .tetmerDefaults$tdiverg)
                                               )),
-                             conditionalPanel(condition = "(input.fitmod == 'man') && (['tse'].includes(input.mod))",
-                                              wellPanel(h4("5th: Only seg. allopolyploids, adjust p-allo"),
-                                                        numericInput('pallo', 'p-allo', .tetmerDefaults$pallo)
+                             shiny::conditionalPanel(condition = "(input.fitmod == 'man') && (['tse'].includes(input.mod))",
+                                              shiny::wellPanel(shiny::h4("5th: Only seg. allopolyploids, adjust p-allo"),
+                                                        shiny::numericInput('pallo', 'p-allo', .tetmerDefaults$pallo)
                                               ))
                       ),
-                      column(3,
-                             conditionalPanel(condition = "input.fitmod == 'auto'",
-                                              wellPanel(h4("2nd: Adjust the fitting area, make all data peaks visible"),
-                                                        sliderInput("axrange", "x limits for fitting",
+                      shiny::column(3,
+                             shiny::conditionalPanel(condition = "input.fitmod == 'auto'",
+                                              shiny::wellPanel(shiny::h4("2nd: Adjust the fitting area, make all data peaks visible"),
+                                                        shiny::sliderInput("axrange", "x limits for fitting",
                                                                     min=currentSliderRanges$xrangeMin, max = currentSliderRanges$xrangeMax,
                                                                     value=c(.tetmerDefaults$axrangel, .tetmerDefaults$axrangeh)),
-                                                        sliderInput("ymax", "y axis max (does not affect fit)",
+                                                        shiny::sliderInput("ymax", "y axis max (does not affect fit)",
                                                                     min=-2, max = currentSliderRanges$ymax,
                                                                     value=(-2 + currentSliderRanges$ymax)/2 + 1, step = (currentSliderRanges$ymax +2)/100 )
                                               ))),
-                      column(3,
-                             conditionalPanel(condition = "input.fitmod == 'auto'",
-                                              wellPanel(h4("3rd: Param ranges"),
+                      shiny::column(3,
+                             shiny::conditionalPanel(condition = "input.fitmod == 'auto'",
+                                              shiny::wellPanel(shiny::h4("3rd: Param ranges"),
 
-                                                        sliderInput('akcov', 'k-mer  multiplicity',
+                                                        shiny::sliderInput('akcov', 'k-mer  multiplicity',
                                                                     min=currentSliderRanges$kcovMin, max = currentSliderRanges$kcovMax,
                                                                     value=c(.tetmerDefaults$akcovl, .tetmerDefaults$akcovh)),
-                                                        sliderInput('avf', 'Variance factor (vf)',
+                                                        shiny::sliderInput('avf', 'Variance factor (vf)',
                                                                     min=currentSliderRanges$vfMin, max = currentSliderRanges$vfMax,
                                                                     value=c(.tetmerDefaults$avfl, .tetmerDefaults$avfh), step = 0.1),
-                                                        sliderInput('ath', "log10 of theta",
+                                                        shiny::sliderInput('ath', "log10 of theta",
                                                                     min=currentSliderRanges$thMin, max = currentSliderRanges$thMax, step = 0.05,
                                                                     value=c(.tetmerDefaults$athl, .tetmerDefaults$athh)),
-                                                        sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
+                                                        shiny::sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
                                                                     min=currentSliderRanges$gsMin, max = currentSliderRanges$gsMax,
                                                                     value=c(.tetmerDefaults$agsl, .tetmerDefaults$agsh))
                                               ))),
-                      column(3,
-                             conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
-                                              wellPanel(h4("4th: Allopolyploids only, adjust sub-genome split time"),
-                                                        sliderInput('adiv', 'T (in units of 2Ne)',
+                      shiny::column(3,
+                             shiny::conditionalPanel(condition = "(input.fitmod == 'auto') && (['tal', 'traab', 'tse'].includes(input.mod))",
+                                              shiny::wellPanel(shiny::h4("4th: Allopolyploids only, adjust sub-genome split time"),
+                                                        shiny::sliderInput('adiv', 'T (in units of 2Ne)',
                                                                     min=currentSliderRanges$divMin, max=currentSliderRanges$divMax,
                                                                     value=c(.tetmerDefaults$adivl, .tetmerDefaults$adivh))
                                               )),
-                             conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
-                                              wellPanel(h4("5th: Proportion of genome that is allopolyploid"),
-                                                        sliderInput('apallo', 'p-allo',
+                             shiny::conditionalPanel(condition = "(input.fitmod == 'auto') && (['tse'].includes(input.mod))",
+                                              shiny::wellPanel(shiny::h4("5th: Proportion of genome that is allopolyploid"),
+                                                        shiny::sliderInput('apallo', 'p-allo',
                                                                     min=currentSliderRanges$palloMin, max=currentSliderRanges$palloMax,
                                                                     value=c(.tetmerDefaults$apallol, .tetmerDefaults$apalloh))
                                               ))
@@ -280,12 +274,17 @@ makeUI <- function(spec){
 #' @examples \dontrun{result <- tetmer(E028)}
 #' \dontrun{result <- tetmer(E030)}
 tetmer <- function(sp=E028){
+  if(!requireNamespace("shiny", quietly = TRUE)){
+    stop("The 'shiny' package is required to run the Tetmer app. ",
+         "Please install it with: install.packages('shiny')",
+         call. = FALSE)
+  }
   spec   <- prepareSpectrum(sp)
   server <- function(input, output, session){
     tetServer(input, output, session, initialSpec = spec)
   }
-  # runApp returns the value passed to stopApp() -- i.e. the updated spectrum
-  result <- shiny::runApp(shinyApp(ui = makeUI(spec), server = server))
+  # runApp returns the value passed to shiny::stopApp() -- i.e. the updated spectrum
+  result <- shiny::runApp(shiny::shinyApp(ui = makeUI(spec), server = server))
   invisible(result)
 }
 
@@ -832,7 +831,7 @@ pointsContam <- function(input, optimised, spect, probs, factors){
 #' @param optimised Fitted values from \code{optim}.
 #' @param spec The current \code{spectrum} object.
 #'
-#' @return A string of the fitted parameters produced by \code{renderText()}
+#' @return A string of the fitted parameters produced by \code{shiny::renderText()}
 #' to be displayed in the Tetmer window.
 #' @keywords internal
 textOut <- function(input, optimised, spec){

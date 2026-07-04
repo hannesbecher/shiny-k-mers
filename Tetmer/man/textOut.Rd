@@ -14,7 +14,7 @@ textOut(input, optimised, spec)
 \item{spec}{The current \code{spectrum} object.}
 }
 \value{
-A string of the fitted parameters produced by \code{renderText()}
+A string of the fitted parameters produced by \code{shiny::renderText()}
 to be displayed in the Tetmer window.
 }
 \description{

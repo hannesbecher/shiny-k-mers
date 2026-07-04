@@ -8,15 +8,18 @@ Authors@R: c(
            role = c("aut", "cre")),
     person("Rahul", "Dey",
            role = "ctb"))
-Description: A shiny app for fitting population parameters to k-mer spectra generated from whole-genome DNA sequencing data.
+Description: Fits population genetic models to k-mer spectra generated 
+    from whole-genome DNA sequencing data. Provides both an interactive 
+    Shiny interface and non-interactive functions for scripted analyses.
 License: GPL (>= 3)
 Depends:
     R (>= 3.5)
-Imports: shiny, graphics, methods, utils, stats
+Imports: graphics, methods, utils, stats
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-Suggests: 
+Suggests:
+    shiny, 
     rmarkdown,
     knitr,
     testthat (>= 3.0.0)
