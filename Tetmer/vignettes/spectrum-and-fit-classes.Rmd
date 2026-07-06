@@ -1,0 +1,177 @@
+---
+title: "The spectrum and tetmerFit classes"
+author: "Hannes Becher"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The spectrum and tetmerFit classes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(Tetmer)
+```
+
+## Overview
+
+Tetmer represents k-mer spectra and model fits with two S4 classes:
+
+- `spectrum` holds a named k-mer spectrum, together with any fits that
+  have been computed for it.
+- `tetmerFit` holds the result of a single model fit: the model type,
+  fitted parameters, the ranges used in the optimisation, and some
+  convergence information.
+
+This vignette introduces both classes, shows how a `tetmerFit` is
+attached to a `spectrum` with `addFit()`, and demonstrates the
+human-readable export and re-import functions `write.spectrum()` and
+`read.spectrum()`.
+
+## The spectrum class
+
+`spectrum` objects have four slots: `name`, `data`, `k`, and `fits`.
+The built-in `E030` dataset is one example:
+
+```{r}
+E030
+slotNames(E030)
+```
+
+The `data` slot is a plain `data.frame` with two columns, `mult` (k-mer
+multiplicity) and `count` (the number of distinct k-mers observed at
+that multiplicity):
+
+```{r}
+head(E030@data)
+```
+
+`k` records the k-mer length used to generate the spectrum, and `fits`
+is a list of `tetmerFit` objects -- empty until a fit has been added.
+
+A `plot` method is defined for `spectrum` objects, which is often
+easier to work with on a log-log scale to see the full range of the
+data:
+
+```{r, fig.width = 6, fig.height = 4}
+plot(E030, log = "xy")
+```
+
+## The tetmerFit class
+
+A `tetmerFit` object is produced by `fitSpectrum()` (see the
+"Non-interactive fitting with fitSpectrum" vignette) or by clicking
+**Done** after an Autofit run in the interactive app. It records eight
+slots: `model`, `par`, `ranges`, `xrange`, `convergence`, `value`, `k`,
+and `version`.
+
+```{r}
+fit <- fitSpectrum(E030,
+                    model  = "d",
+                    kcov   = c(50, 200),
+                    vf     = c(1, 10),
+                    theta  = c(-2, 0.6),
+                    gs     = c(6, 9),
+                    xrange = c(45, 250))
+fit
+slotNames(fit)
+fit@par
+```
+
+`par` holds the fitted parameter values, `ranges` records the bounds
+that were searched, `xrange` records the multiplicity range the fit
+was computed over, and `convergence`/`value` come directly from the
+underlying call to `optim()`. `version` records the Tetmer version
+used, which is useful when comparing fits produced at different times.
+
+## Attaching a fit to its spectrum: addFit()
+
+`addFit()` appends a `tetmerFit` to a `spectrum`'s `fits` slot,
+returning an updated `spectrum` object (it does not modify anything in
+place, in keeping with R's usual copy-on-modify semantics):
+
+```{r}
+spec_with_fit <- addFit(E030, fit)
+spec_with_fit
+```
+
+Multiple fits can be attached to the same spectrum -- for example, to
+keep a record of fits obtained under different models or parameter
+ranges for comparison:
+
+```{r}
+fit_narrower <- fitSpectrum(E030,
+                             model  = "d",
+                             kcov   = c(90, 120),
+                             vf     = c(1, 10),
+                             theta  = c(-2, 0.6),
+                             gs     = c(6, 9),
+                             xrange = c(45, 250))
+spec_with_fits <- addFit(spec_with_fit, fit_narrower)
+spec_with_fits
+```
+
+## Exporting with write.spectrum()
+
+`write.spectrum()` writes a `spectrum` object to a plain text file.
+The spectrum data are written as two columns, preceded by a block of
+`#`-prefixed comment lines recording the spectrum's name and k-mer
+length, and -- for each stored fit -- its model, fitted parameters,
+parameter ranges, and convergence information:
+
+```{r}
+tf <- tempfile(fileext = ".txt")
+write.spectrum(spec_with_fit, tf)
+cat(readLines(tf, n = 15), sep = "\n")
+```
+
+Because the metadata lines start with `#`, the file remains a valid
+plain-text k-mer spectrum: it can be inspected with any text editor or
+scrolled through with `less`, and it can be read by any tool that
+expects a two-column, `#`-commented spectrum file, including Tetmer's
+own `read.spectrum()`.
+
+## Re-importing with read.spectrum()
+
+`read.spectrum()` reads the multiplicity/count data back in as a new
+`spectrum` object:
+
+```{r}
+reloaded <- read.spectrum(tf, nam = "E030 reloaded", k = 21)
+reloaded
+all.equal(reloaded@data, spec_with_fit@data, check.attributes = FALSE)
+```
+
+Note that `read.spectrum()` restores the spectrum data itself, but not
+the fit records: the `# fit.*` metadata lines written by
+`write.spectrum()` are for human inspection and downstream reference
+rather than being parsed back in, so `reloaded@fits` is an empty list
+even though the file on disk records one fit. If you need to keep
+working with a fit programmatically, keep a reference to the
+`tetmerFit` object (or the `spectrum` it was added to) in your R
+session, rather than relying on re-reading the exported file.
+
+## Putting it together
+
+A typical scripted workflow combines all of the pieces shown above:
+read or select a spectrum, fit a model to it, attach the fit, and
+export the annotated spectrum for later reference:
+
+```{r, eval = FALSE}
+spec <- read.spectrum("path/to/mySpectrumFile", nam = "My sample", k = 21)
+fit  <- fitSpectrum(spec,
+                     model  = "d",
+                     kcov   = c(5, 200),
+                     vf     = c(1, 10),
+                     theta  = c(-2, 0.6),
+                     gs     = c(6, 9),
+                     xrange = c(45, 250))
+spec <- addFit(spec, fit)
+write.spectrum(spec, "mySample_fitted.txt")
+```

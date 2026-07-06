@@ -4,3 +4,5 @@
 ^\.positai$
 ^\.claude$
 ^data-raw$
+^doc$
+^Meta$

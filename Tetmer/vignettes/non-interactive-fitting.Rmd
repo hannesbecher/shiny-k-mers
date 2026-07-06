@@ -1,0 +1,144 @@
+---
+title: "Non-interactive fitting with fitSpectrum"
+author: "Hannes Becher"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Non-interactive fitting with fitSpectrum}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(Tetmer)
+```
+
+## Overview
+
+`fitSpectrum()` runs the same optimisation machinery as the Autofit
+mode of the interactive `tetmer()` app, but as a plain function call
+that returns a `tetmerFit` object directly. This makes it possible to
+fit many spectra in a script or loop, on a cluster, or in an automated
+pipeline, without needing a Shiny session or the `shiny` package at
+all.
+
+## Fitting a diploid spectrum
+
+The built-in `E030` spectrum is from a diploid plant. Its dominant
+peak sits at a k-mer multiplicity of around 108, so a reasonable
+starting range for the k-mer coverage is somewhat below that value:
+
+```{r}
+fit_d <- fitSpectrum(E030,
+                      model  = "d",
+                      kcov   = c(50, 200),
+                      vf     = c(1, 10),
+                      theta  = c(-2, 0.6),
+                      gs     = c(6, 9),
+                      xrange = c(45, 250))
+fit_d
+```
+
+The arguments mirror the sliders in the interactive app's Autofit
+panels: `kcov`, `vf`, `theta`, and `gs` each take a two-element vector
+giving the lower and upper bound to search within, and `xrange` gives
+the multiplicity range of the data to fit over -- which should exclude
+any contamination peak at low multiplicity, just as in the interactive
+app.
+
+## Fitting a polyploid spectrum
+
+The built-in `E028` spectrum is from an allotetraploid plant. Fitting
+an allopolyploid model additionally requires a `diverg` range for the
+divergence time between sub-genomes (in units of 2*Ne*), which defaults
+to `c(0.1, 100)` if not supplied:
+
+```{r}
+fit_tal <- fitSpectrum(E028,
+                        model  = "tal",
+                        kcov   = c(10, 100),
+                        vf     = c(1, 10),
+                        theta  = c(-2, 0.6),
+                        gs     = c(6, 9),
+                        xrange = c(45, 200),
+                        diverg = c(0.1, 100))
+fit_tal
+```
+
+## Available models
+
+The `model` argument accepts one of:
+
+- `"d"` -- diploid
+- `"traaa"` -- autotriploid
+- `"traab"` -- allotriploid
+- `"tau"` -- autotetraploid
+- `"tal"` -- allotetraploid
+- `"tse"` -- segmental allotetraploid, which additionally requires a
+  `pallo` range (proportion of the genome that is allopolyploid),
+  defaulting to `c(0.01, 0.99)`
+
+These correspond to the same model choices offered in the interactive
+app's "Model" panel.
+
+## Handling failed optimisation
+
+Optimisation is run with random restarts, controlled by `maxAttempts`
+(default `5`). If every attempt fails to converge, `fitSpectrum()`
+issues a warning and returns `NULL` rather than a `tetmerFit` object.
+This can happen, for instance, if `xrange` extends beyond the
+multiplicity values present in the spectrum:
+
+```{r}
+failed_fit <- fitSpectrum(E030,
+                           model  = "d",
+                           kcov   = c(50, 200),
+                           vf     = c(1, 10),
+                           theta  = c(-2, 0.6),
+                           gs     = c(6, 9),
+                           xrange = c(45, 5000),
+                           maxAttempts = 2)
+is.null(failed_fit)
+```
+
+In practice, a `NULL` result usually means the parameter ranges are
+implausible for the data -- as here, where `xrange` reaches far beyond
+the maximum multiplicity actually present in `E030`. Correcting the
+ranges, or increasing `maxAttempts` to allow more random restarts, is
+generally enough to resolve it.
+
+## Batch fitting
+
+Because `fitSpectrum()` is a plain function, it fits naturally into a
+loop over many samples, for example when each sample's spectrum has
+been saved to its own file with `read.spectrum()`:
+
+```{r, eval = FALSE}
+files <- list.files("spectra/", full.names = TRUE)
+
+fits <- lapply(files, function(f) {
+  spec <- read.spectrum(f, nam = tools::file_path_sans_ext(basename(f)), k = 21)
+  fitSpectrum(spec,
+              model  = "d",
+              kcov   = c(5, 200),
+              vf     = c(1, 10),
+              theta  = c(-2, 0.6),
+              gs     = c(6, 9),
+              xrange = c(45, 250))
+})
+names(fits) <- tools::file_path_sans_ext(basename(files))
+```
+
+Each element of `fits` is either a `tetmerFit` object or `NULL` if
+optimisation failed for that sample, so it is worth checking for `NULL`
+before summarising results across the batch.
+
+For working with the `spectrum` and `tetmerFit` objects returned here
+-- attaching a fit to its spectrum, or exporting the result to a file
+-- see the "The spectrum and tetmerFit classes" vignette.
