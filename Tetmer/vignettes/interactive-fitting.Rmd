@@ -1,6 +1,6 @@
 ---
 title: "Interactive fitting with Tetmer"
-author: "Hannes Becher"
+author: "Rahul Dey"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Interactive fitting with Tetmer}

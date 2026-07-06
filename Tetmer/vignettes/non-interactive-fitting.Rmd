@@ -1,6 +1,6 @@
 ---
 title: "Non-interactive fitting with fitSpectrum"
-author: "Hannes Becher"
+author: "Rahul Dey"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Non-interactive fitting with fitSpectrum}
