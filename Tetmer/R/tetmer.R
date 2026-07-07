@@ -67,7 +67,7 @@ utils::globalVariables(c("E028", "initialSpec"))
 #'
 #' @return NULL
 #' @importFrom stats optim runif
-#' @importFrom graphics abline legend points text
+#' @importFrom graphics abline grconvertY legend points text
 tetServer <- function(input, output, session, initialSpec) {
 
   # Reactive values -- session-scoped state, replaces all <<- assignments
@@ -806,15 +806,12 @@ write.spectrum <- function(x, file, ...){
   invisible(NULL)
 }
 
-#' Add vertical lines to k-mer spectrum plot
+#' Get expected peak count for a model
 #'
-#' Using \code{input}, this function plots dashed vertical lines at multiples
-#' of \code{n} corresponding to the sample's ploidy.
+#' @param model Model code
 #'
-#' @param input Input object from GUI
-#' @param optimised The fit obtained from optim.
+#' @return Integer number of expected peaks
 #' @keywords internal
-#' @return NULL
 getPeakCount <- function(model){
   switch(model,
          d = 2,
@@ -1587,6 +1584,7 @@ allowSegTet <- function(){
 #'
 #' @param object Either a \code{tetmerFit} object or a model code such as
 #'   \code{"d"} or \code{"tal"}.
+#' @param ... Additional arguments passed to methods.
 #' @param par For the \code{character} method, a named numeric vector of
 #'   model parameters. Required names are \code{cov}, \code{vf},
 #'   \code{theta}, and \code{haplSize}, plus \code{diverg} for

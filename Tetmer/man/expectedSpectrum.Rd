@@ -21,6 +21,8 @@ expectedSpectrum(object, ...)
 \item{object}{Either a \code{tetmerFit} object or a model code such as
 \code{"d"} or \code{"tal"}.}
 
+\item{...}{Additional arguments passed to methods.}
+
 \item{xrange}{Numeric vector of length 2 giving the multiplicity range
 for the generated spectrum. For the \code{tetmerFit} method, defaults
 to \code{object@xrange}. For the \code{character} method, this must

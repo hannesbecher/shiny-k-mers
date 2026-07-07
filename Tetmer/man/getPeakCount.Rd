@@ -2,17 +2,17 @@
 % Please edit documentation in R/tetmer.R
 \name{getPeakCount}
 \alias{getPeakCount}
-\title{Add vertical lines to k-mer spectrum plot}
+\title{Get expected peak count for a model}
 \usage{
 getPeakCount(model)
 }
 \arguments{
-\item{input}{Input object from GUI}
-
-\item{optimised}{The fit obtained from optim.}
+\item{model}{Model code}
+}
+\value{
+Integer number of expected peaks
 }
 \description{
-Using \code{input}, this function plots dashed vertical lines at multiples
-of \code{n} corresponding to the sample's ploidy.
+Get expected peak count for a model
 }
 \keyword{internal}
