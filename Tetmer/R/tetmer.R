@@ -574,7 +574,8 @@ fitSpectrum <- function(spec,
 
 #' Plot a k-mer spectrum
 #'
-#' Uses the plot function to generate a scatter plot of a k-mer spectrum.
+#' Uses the plot function to generate a scatter plot of a k-mer spectrum,
+#' optionally overlaying one of its stored model fits.
 #'
 #' It may be useful to set \code{log="xy"} or to limit the plotting range
 #' using \code{xlim} or \code{ylim}.
@@ -583,23 +584,94 @@ fitSpectrum <- function(spec,
 #' @param main (optional) A string passed to \code{plot()}
 #' @param xlab (optional) A string passed to \code{plot()}
 #' @param ylab (optional) A string passed to \code{plot()}
-#' @param ... other keyword arguments to be passed to \code{plot()}
+#' @param fitIndex (optional) Which stored fit, if any, to overlay on the
+#'   plot. \code{NULL} (the default) or \code{1} overlays the first stored
+#'   fit, if one exists. \code{NA} suppresses fit plotting entirely. Any
+#'   other integer overlays the fit at that position in \code{x@fits}, if
+#'   it exists; a warning is issued and no fit is drawn if it does not.
+#'   When a fit is plotted, \code{xlim} and \code{ylim} default to a range
+#'   based on that fit's \code{xrange}, unless overridden via \code{...}.
+#' @param ... other keyword arguments to be passed to \code{plot()};
+#'   any \code{xlim} or \code{ylim} supplied here takes precedence over
+#'   the defaults derived from the plotted fit
 #'
 #' @return NULL
 #' @export
 #' @examples
 #' plot(E030, log="xy")
 #' plot(E030, xlim=c(0,200), ylim=c(0,10000000))
+#' \dontrun{
+#' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
+#'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+#' spec <- addFit(E030, fit)
+#' plot(spec)                 # overlays the first (only) fit
+#' plot(spec, fitIndex = NA)  # spectrum only, no fit overlay
+#' }
 plot.spectrum <- function(x,
                           main,
                           xlab,
                           ylab,
+                          fitIndex = NULL,
                           ...){
-  if(missing(main)) main=x@name
-  if(missing(xlab)) xlab="K-mer multiplicity (coverage)"
-  if(missing(ylab)) ylab="K-mer count"
-  plot(count ~ mult, data = x@data, main=main, xlab=xlab, ylab=ylab, ...)
+  if(missing(main)) main <- x@name
+  if(missing(xlab)) xlab <- "K-mer multiplicity (coverage)"
+  if(missing(ylab)) ylab <- "K-mer count"
+
+  if(is.null(fitIndex)) fitIndex <- 1
+
+  fit <- NULL
+  suppressFit <- length(fitIndex) == 1 && is.na(fitIndex)
+
+  if(!suppressFit){
+    if(fitIndex >= 1 && fitIndex <= length(x@fits)){
+      fit <- x@fits[[fitIndex]]
+    } else if(!(isTRUE(fitIndex == 1) && length(x@fits) == 0)){
+      # Only warn for an explicit request that can't be satisfied --
+      # stay silent for the implicit default of 1 on a spectrum with
+      # no stored fits, so existing plot(spec) calls keep working.
+      warning("plot.spectrum: fitIndex ", fitIndex,
+              " does not exist in this spectrum's fits -- plotting data only.")
+    }
+  }
+
+  extraArgs <- list(...)
+
+  if(!is.null(fit)){
+    xmin <- fit@xrange[1]
+    xmax <- fit@xrange[2]
+    if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
+    if(is.null(extraArgs$ylim)) extraArgs$ylim <- c(0, max(x@data$count[xmin:xmax]))
+  }
+
+  plotArgs <- c(list(count ~ mult, data = x@data,
+                      main = main, xlab = xlab, ylab = ylab),
+                extraArgs)
+  do.call(plot, plotArgs)
+
+  if(!is.null(fit)){
+    fitInput <- list(mod = fit@model)
+    probs   <- getProbs(fitInput)
+    factors <- getFactors(fitInput)
+
+    par    <- fit@par
+    diverg <- if("diverg" %in% names(par)) par["diverg"] else NULL
+    pallo  <- if("pallo"  %in% names(par)) par["pallo"]  else NULL
+
+    points(
+      xmin:xmax,
+      evalModel(probs, factors,
+                xmin = xmin, xmax = xmax,
+                kcov = par["cov"], vf = par["vf"],
+                theta = par["theta"], gs = par["haplSize"],
+                diverg = diverg, pallo = pallo),
+      col = "red", type = 'l', lty = 1, lwd = 2
+    )
+    legend("topright",
+           col = c(1, 2), lwd = c(1, 2), lty = c(0, 1), pch = c(1, NA),
+           legend = c("Data", "Fit"))
+  }
 }
+
 
 
 #' Write a k-mer spectrum to a text file

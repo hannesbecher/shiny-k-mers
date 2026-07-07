@@ -4,7 +4,7 @@
 \alias{plot.spectrum}
 \title{Plot a k-mer spectrum}
 \usage{
-\method{plot}{spectrum}(x, main, xlab, ylab, ...)
+\method{plot}{spectrum}(x, main, xlab, ylab, fitIndex = NULL, ...)
 }
 \arguments{
 \item{x}{An object of class \code{spectrum}}
@@ -15,10 +15,21 @@
 
 \item{ylab}{(optional) A string passed to \code{plot()}}
 
-\item{...}{other keyword arguments to be passed to \code{plot()}}
+\item{fitIndex}{(optional) Which stored fit, if any, to overlay on the
+plot. \code{NULL} (the default) or \code{1} overlays the first stored
+fit, if one exists. \code{NA} suppresses fit plotting entirely. Any
+other integer overlays the fit at that position in \code{x@fits}, if
+it exists; a warning is issued and no fit is drawn if it does not.
+When a fit is plotted, \code{xlim} and \code{ylim} default to a range
+based on that fit's \code{xrange}, unless overridden via \code{...}.}
+
+\item{...}{other keyword arguments to be passed to \code{plot()};
+any \code{xlim} or \code{ylim} supplied here takes precedence over
+the defaults derived from the plotted fit}
 }
 \description{
-Uses the plot function to generate a scatter plot of a k-mer spectrum.
+Uses the plot function to generate a scatter plot of a k-mer spectrum,
+optionally overlaying one of its stored model fits.
 }
 \details{
 It may be useful to set \code{log="xy"} or to limit the plotting range
@@ -27,4 +38,11 @@ using \code{xlim} or \code{ylim}.
 \examples{
 plot(E030, log="xy")
 plot(E030, xlim=c(0,200), ylim=c(0,10000000))
+\dontrun{
+fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
+                     theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+spec <- addFit(E030, fit)
+plot(spec)                 # overlays the first (only) fit
+plot(spec, fitIndex = NA)  # spectrum only, no fit overlay
+}
 }
