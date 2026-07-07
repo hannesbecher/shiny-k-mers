@@ -1,6 +1,6 @@
 ---
 title: "Non-interactive fitting with fitSpectrum"
-author: "Rahul Dey"
+author: "Rahul Dey & Hannes Becher"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Non-interactive fitting with fitSpectrum}
@@ -37,11 +37,11 @@ starting range for the k-mer coverage is somewhat below that value:
 ```{r}
 fit_d <- fitSpectrum(E030,
                       model  = "d",
-                      kcov   = c(50, 200),
+                      kcov   = c(30, 60),
                       vf     = c(1, 10),
                       theta  = c(-2, 0.6),
                       gs     = c(6, 9),
-                      xrange = c(45, 250))
+                      xrange = c(45, 150))
 fit_d
 ```
 
@@ -51,6 +51,14 @@ giving the lower and upper bound to search within, and `xrange` gives
 the multiplicity range of the data to fit over -- which should exclude
 any contamination peak at low multiplicity, just as in the interactive
 app.
+
+To visualise the fitted curve with `plot.spectrum()`, attach the fit to
+the original spectrum and then plot that spectrum:
+
+```{r, fig.width = 7, fig.height = 5}
+spec_d <- addFit(E030, fit_d)
+plot(spec_d)
+```
 
 ## Fitting a polyploid spectrum
 
@@ -62,13 +70,20 @@ to `c(0.1, 100)` if not supplied:
 ```{r}
 fit_tal <- fitSpectrum(E028,
                         model  = "tal",
-                        kcov   = c(10, 100),
+                        kcov   = c(37, 45),
                         vf     = c(1, 10),
                         theta  = c(-2, 0.6),
                         gs     = c(6, 9),
-                        xrange = c(45, 200),
+                        xrange = c(25, 200),
                         diverg = c(0.1, 100))
 fit_tal
+```
+
+The same plotting workflow works for polyploid fits:
+
+```{r, fig.width = 7, fig.height = 5}
+spec_tal <- addFit(E028, fit_tal)
+plot(spec_tal)
 ```
 
 ## Available models
