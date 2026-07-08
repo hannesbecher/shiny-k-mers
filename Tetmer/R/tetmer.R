@@ -743,6 +743,82 @@ plot.spectrum <- function(x,
 
 
 
+#' Plot the deviation between a fit and its observed spectrum
+#'
+#' Plots the residual (observed minus expected k-mer count) between a
+#' spectrum's data and one of its stored fits, as a diagnostic for how
+#' well a fit obtained non-interactively with \code{fitSpectrum()} matches
+#' the data. This complements the fit overlay added to \code{plot.spectrum}:
+#' where that shows both curves together, \code{diagPlot} shows the
+#' difference between them directly.
+#'
+#' Expected peak positions for the fitted model are indicated with dashed
+#' grey vertical lines and \code{1x}, \code{2x}, etc. labels, matching the
+#' Shiny app display.
+#'
+#' @param x A \code{spectrum} object with at least one stored fit
+#' @param fitIndex Which stored fit to diagnose. Unlike \code{plot.spectrum},
+#'   a valid fit is required here, so \code{NA} is not accepted; an error
+#'   is raised if \code{x} has no stored fits or if \code{fitIndex} does
+#'   not refer to one of them. Defaults to \code{1}, the first stored fit.
+#' @param main (optional) A string passed to \code{plot()}
+#' @param xlab (optional) A string passed to \code{plot()}
+#' @param ylab (optional) A string passed to \code{plot()}
+#' @param ... other keyword arguments to be passed to \code{plot()}
+#'
+#' @return NULL, invisibly
+#' @export
+#' @importFrom graphics grconvertY
+#' @examples
+#' \dontrun{
+#' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
+#'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+#' spec <- addFit(E030, fit)
+#' diagPlot(spec)
+#' }
+diagPlot <- function(x, fitIndex = 1, main, xlab, ylab, ...){
+  if(length(x@fits) == 0){
+    stop("diagPlot: spectrum '", x@name, "' has no stored fits.", call. = FALSE)
+  }
+  if(length(fitIndex) != 1 || is.na(fitIndex) ||
+     fitIndex < 1 || fitIndex > length(x@fits)){
+    stop("diagPlot: fitIndex ", fitIndex,
+         " does not exist in this spectrum's fits.", call. = FALSE)
+  }
+
+  fit <- x@fits[[fitIndex]]
+
+  if(missing(main)) main <- paste0(x@name, " -- fit ", fitIndex, " residuals")
+  if(missing(xlab)) xlab <- "K-mer multiplicity (coverage)"
+  if(missing(ylab)) ylab <- "Observed - expected k-mer count"
+
+  # Reuse the same machinery that builds the fit overlay in plot.spectrum,
+  # via the exported expectedSpectrum() method, rather than recomputing
+  # the expected counts by hand.
+  expected <- expectedSpectrum(fit)
+  observed <- x@data$count[match(expected@data$mult, x@data$mult)]
+  residual <- observed - expected@data$count
+
+  extraArgs <- list(...)
+  plotArgs <- c(list(x = expected@data$mult, y = residual, type = "l",
+                      main = main, xlab = xlab, ylab = ylab),
+                extraArgs)
+  do.call(plot, plotArgs)
+  abline(h = 0, lty = 3, col = "grey40")
+
+  params <- getModelParameters(list(mod = fit@model), optimised = list(par = fit@par))
+  ypos <- grconvertY(0.9, from = "nfc", to = "user")
+  drawPeakMarkers(cov = params$cov,
+                  nPeaks = getPeakCount(fit@model),
+                  ypos = ypos,
+                  col = "grey",
+                  cex = 1.2)
+
+  invisible(NULL)
+}
+
+
+
 #' Write a k-mer spectrum to a text file
 #'
 #' Writes a \code{spectrum} object to a plain text file in a human-readable
