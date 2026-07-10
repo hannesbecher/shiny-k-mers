@@ -4,39 +4,29 @@
 \alias{diagPlot}
 \title{Plot the deviation between a fit and its observed spectrum}
 \usage{
-diagPlot(x, fitIndex = 1, main, xlab, ylab, ...)
+diagPlot(x, fitIndex = 1, ...)
 }
 \arguments{
 \item{x}{A \code{spectrum} object with at least one stored fit}
 
-\item{fitIndex}{Which stored fit to diagnose. Unlike \code{plot.spectrum},
-a valid fit is required here, so \code{NA} is not accepted; an error
-is raised if \code{x} has no stored fits or if \code{fitIndex} does
-not refer to one of them. Defaults to \code{1}, the first stored fit.}
+\item{fitIndex}{Which stored fit to diagnose. Defaults to \code{1}. An
+error is raised if \code{x} has no stored fits, or if \code{fitIndex}
+does not refer to one of them.}
 
-\item{main}{(optional) A string passed to \code{plot()}}
-
-\item{xlab}{(optional) A string passed to \code{plot()}}
-
-\item{ylab}{(optional) A string passed to \code{plot()}}
-
-\item{...}{other keyword arguments to be passed to \code{plot()}}
+\item{...}{Additional arguments passed on to \code{plot.spectrum}, e.g.
+\code{main}, \code{xlab}, \code{ylab}, or graphical parameters such
+as \code{xlim}/\code{ylim}.}
 }
 \value{
 NULL, invisibly
 }
 \description{
-Plots the residual (observed minus expected k-mer count) between a
-spectrum's data and one of its stored fits, as a diagnostic for how
-well a fit obtained non-interactively with \code{fitSpectrum()} matches
-the data. This complements the fit overlay added to \code{plot.spectrum}:
-where that shows both curves together, \code{diagPlot} shows the
-difference between them directly.
-}
-\details{
-Expected peak positions for the fitted model are indicated with dashed
-grey vertical lines and \code{1x}, \code{2x}, etc. labels, matching the
-Shiny app display.
+A thin convenience wrapper around
+\code{plot(x, fitIndex = fitIndex, residuals = TRUE, ...)}, kept under
+its own name since it was the original entry point for this diagnostic.
+New code may prefer calling \code{plot()} directly with
+\code{residuals = TRUE} (residual only) or \code{residuals = "overlay"}
+(data and fit, with the residual on a secondary axis).
 }
 \examples{
 \dontrun{
