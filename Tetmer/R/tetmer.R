@@ -613,10 +613,106 @@ fitSpectrum <- function(spec,
 }
 
 
+#' Retrieve a stored fit from a spectrum, with consistent validation
+#'
+#' Shared lookup logic used by \code{plot.spectrum} and
+#' \code{residuals.spectrum} so that \code{fitIndex} handling stays
+#' consistent between them.
+#'
+#' @param x A \code{spectrum} object
+#' @param fitIndex Requested fit index. \code{NULL} is treated as \code{1}.
+#' @param caller Name used in warning/error messages
+#' @param requireFit If \code{TRUE}, raise an error rather than a warning
+#'   when no valid fit can be found (used where a fit is mandatory, e.g.
+#'   \code{residuals.spectrum}, since there is nothing to compute without
+#'   one). If \code{FALSE} (used by \code{plot.spectrum}), \code{NA}
+#'   suppresses fit lookup and returns \code{NULL} silently, and an
+#'   unsatisfiable explicit request warns rather than errors.
+#'
+#' @return Either a \code{tetmerFit} object, or \code{NULL} if
+#'   \code{requireFit} is \code{FALSE} and no fit could be found or was
+#'   requested.
+#' @keywords internal
+getStoredFit <- function(x, fitIndex, caller, requireFit = FALSE){
+  if(is.null(fitIndex)) fitIndex <- 1
+
+  if(requireFit){
+    if(length(x@fits) == 0){
+      stop(caller, ": spectrum '", x@name, "' has no stored fits.", call. = FALSE)
+    }
+    if(length(fitIndex) != 1 || is.na(fitIndex) ||
+       fitIndex < 1 || fitIndex > length(x@fits)){
+      stop(caller, ": fitIndex ", fitIndex,
+           " does not exist in this spectrum's fits.", call. = FALSE)
+    }
+    return(x@fits[[fitIndex]])
+  }
+
+  if(length(fitIndex) == 1 && is.na(fitIndex)) return(NULL)
+
+  if(fitIndex >= 1 && fitIndex <= length(x@fits)){
+    return(x@fits[[fitIndex]])
+  }
+  if(!(isTRUE(fitIndex == 1) && length(x@fits) == 0)){
+    # Only warn for an explicit request that can't be satisfied --
+    # stay silent for the implicit default of 1 on a spectrum with
+    # no stored fits, so existing plot(spec) calls keep working.
+    warning(caller, ": fitIndex ", fitIndex,
+            " does not exist in this spectrum's fits -- plotting data only.")
+  }
+  NULL
+}
+
+
+#' Residuals between a spectrum and one of its stored fits
+#'
+#' Computes the residual (observed minus expected k-mer count) between a
+#' spectrum's observed data and one of its stored model fits, over a given
+#' multiplicity range. This is the S3 method for the \code{spectrum} class
+#' of the generic \code{stats::residuals}, and is used internally by
+#' \code{plot.spectrum} when \code{residuals} is requested.
+#'
+#' @param object A \code{spectrum} object with at least one stored fit
+#' @param fitIndex Which stored fit to compute residuals for. Defaults to
+#'   \code{1}, the first stored fit. An error is raised if \code{object}
+#'   has no stored fits, or if \code{fitIndex} does not refer to one of
+#'   them.
+#' @param xrange (optional) Numeric vector of length 2 giving the
+#'   multiplicity range to compute residuals over. Defaults to the
+#'   selected fit's own \code{xrange}.
+#' @param ... Currently unused; present for compatibility with the
+#'   \code{residuals} generic.
+#'
+#' @return A named numeric vector of residuals (observed minus expected
+#'   k-mer count), named by multiplicity.
+#' @export
+#' @examples
+#' \dontrun{
+#' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
+#'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+#' spec <- addFit(E030, fit)
+#' residuals(spec)
+#' residuals(spec, xrange = c(45, 300))
+#' }
+residuals.spectrum <- function(object, fitIndex = 1, xrange = NULL, ...){
+  fit <- getStoredFit(object, fitIndex, caller = "residuals.spectrum",
+                      requireFit = TRUE)
+
+  if(is.null(xrange)) xrange <- fit@xrange
+
+  expected <- expectedSpectrum(fit, xrange = xrange)
+  observed <- object@data$count[match(expected@data$mult, object@data$mult)]
+  residual <- observed - expected@data$count
+  names(residual) <- expected@data$mult
+  residual
+}
+
+
 #' Plot a k-mer spectrum
 #'
 #' Uses the plot function to generate a scatter plot of a k-mer spectrum,
-#' optionally overlaying one of its stored model fits.
+#' optionally overlaying one of its stored model fits and/or the residual
+#' between the spectrum and that fit.
 #'
 #' It may be useful to set \code{log="xy"} or to limit the plotting range
 #' using \code{xlim} or \code{ylim}.
@@ -627,60 +723,86 @@ fitSpectrum <- function(spec,
 #' @param ylab (optional) A string passed to \code{plot()}
 #' @param fitIndex (optional) Which stored fit, if any, to overlay on the
 #'   plot. \code{NULL} (the default) or \code{1} overlays the first stored
-#'   fit, if one exists. \code{NA} suppresses fit plotting entirely. Any
-#'   other integer overlays the fit at that position in \code{x@fits}, if
-#'   it exists; a warning is issued and no fit is drawn if it does not.
-#'   When a fit is plotted, \code{xlim} and \code{ylim} default to a range
-#'   based on that fit's \code{xrange}, unless overridden via \code{...}.
-#'   A message is emitted indicating which stored fit index is shown.
-#'   A warning is also issued if the stored fit was generated by a Tetmer
-#'   version different from the currently loaded package version.
-#'   Fit peak positions are annotated with dashed vertical lines and
-#'   \code{1x}, \code{2x}, etc. labels, matching the Shiny app display.
-#'   The fit x-range boundaries are also shown as dashed blue vertical
-#'   lines and described in the legend.
+#'   fit, if one exists. \code{NA} suppresses fit plotting entirely (only
+#'   meaningful when \code{residuals = FALSE}, since residual plotting
+#'   requires a fit, and raises an error otherwise). Any other integer
+#'   overlays the fit at that position in \code{x@fits}, if it exists; a
+#'   warning is issued and no fit is drawn if it does not (again, unless
+#'   \code{residuals} is requested, in which case this is an error since
+#'   there is nothing to show without a fit). When a fit is plotted,
+#'   \code{xlim} and \code{ylim} default to a range based on that fit's
+#'   \code{xrange}, unless overridden via \code{...}. Fit peak positions
+#'   are annotated with dashed vertical lines and \code{1x}, \code{2x},
+#'   etc. labels, matching the Shiny app display. The fit x-range
+#'   boundaries are shown as dashed blue vertical lines and described in
+#'   the legend.
+#' @param residuals Controls whether residuals (observed minus expected
+#'   count, computed via \code{residuals.spectrum()}) are shown.
+#'   \code{FALSE} (the default) plots only the data (and fit, if any), as
+#'   before. \code{TRUE} replaces the main panel with the residual curve
+#'   for the fit given by \code{fitIndex} -- a diagnostic view for fits
+#'   obtained non-interactively, where there is no app window to inspect
+#'   them in. \code{"overlay"} plots the data and fit as usual, with the
+#'   residual additionally drawn on a secondary y-axis on the right-hand
+#'   side of the plot.
 #' @param ... other keyword arguments to be passed to \code{plot()};
 #'   any \code{xlim} or \code{ylim} supplied here takes precedence over
 #'   the defaults derived from the plotted fit
 #'
-#' @return NULL
+#' @return NULL, invisibly
 #' @export
+#' @importFrom graphics grconvertY axis mtext
 #' @examples
 #' plot(E030, log="xy")
 #' plot(E030, xlim=c(0,200), ylim=c(0,10000000))
 #' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
 #'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
 #' spec <- addFit(E030, fit)
-#' plot(spec)                 # overlays the first (only) fit
-#' plot(spec, fitIndex = NA)  # spectrum only, no fit overlay
+#' plot(spec)                        # overlays the first (only) fit
+#' plot(spec, fitIndex = NA)         # spectrum only, no fit overlay
+#' plot(spec, residuals = TRUE)      # residual-only diagnostic plot
+#' plot(spec, residuals = "overlay") # data + fit, with residual on secondary axis
 plot.spectrum <- function(x,
                           main,
                           xlab,
                           ylab,
                           fitIndex = NULL,
+                          residuals = FALSE,
                           ...){
-  if(missing(main)) main <- x@name
-  if(missing(xlab)) xlab <- "K-mer multiplicity (coverage)"
-  if(missing(ylab)) ylab <- "K-mer count"
+  residualsMode <- if(isTRUE(residuals)){
+    "only"
+  } else if(identical(residuals, "overlay")){
+    "overlay"
+  } else if(isFALSE(residuals)){
+    "none"
+  } else {
+    stop("plot.spectrum: `residuals` must be FALSE, TRUE, or \"overlay\".",
+         call. = FALSE)
+  }
 
   if(is.null(fitIndex)) fitIndex <- 1
 
-  fit <- NULL
-  suppressFit <- length(fitIndex) == 1 && is.na(fitIndex)
+  fit <- getStoredFit(x, fitIndex, caller = "plot.spectrum",
+                      requireFit = residualsMode != "none")
 
-  if(!suppressFit){
-    if(fitIndex >= 1 && fitIndex <= length(x@fits)){
-      fit <- x@fits[[fitIndex]]
-    } else if(!(isTRUE(fitIndex == 1) && length(x@fits) == 0)){
-      # Only warn for an explicit request that can't be satisfied --
-      # stay silent for the implicit default of 1 on a spectrum with
-      # no stored fits, so existing plot(spec) calls keep working.
-      warning("plot.spectrum: fitIndex ", fitIndex,
-              " does not exist in this spectrum's fits -- plotting data only.")
+  if(missing(main)){
+    main <- if(residualsMode == "only"){
+      paste0(x@name, " -- fit ", fitIndex, " residuals")
+    } else {
+      x@name
     }
+  }
+  if(missing(xlab)) xlab <- "K-mer multiplicity (coverage)"
+  if(missing(ylab)){
+    ylab <- if(residualsMode == "only") "Observed - expected k-mer count" else "K-mer count"
   }
 
   extraArgs <- list(...)
+
+  fitInput <- NULL
+  params   <- NULL
+  resid    <- NULL
+  xmin <- xmax <- NULL
 
   if(!is.null(fit)){
     message("plot.spectrum: showing fit index ", fitIndex,
@@ -698,8 +820,37 @@ plot.spectrum <- function(x,
 
     xmin <- fit@xrange[1]
     xmax <- fit@xrange[2]
+
+    fitInput <- list(mod = fit@model)
+    params   <- getModelParameters(fitInput, optimised = list(par = fit@par))
+    resid    <- residuals.spectrum(x, fitIndex = fitIndex, xrange = fit@xrange)
+
+    if(residualsMode != "only"){
+      if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
+      if(is.null(extraArgs$ylim)) extraArgs$ylim <- c(0, max(x@data$count[xmin:xmax]))
+    }
+  }
+
+  if(residualsMode == "only"){
     if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
-    if(is.null(extraArgs$ylim)) extraArgs$ylim <- c(0, max(x@data$count[xmin:xmax]))
+    plotArgs <- c(list(x = xmin:xmax, y = resid, type = "l",
+                        main = main, xlab = xlab, ylab = ylab),
+                  extraArgs)
+    do.call(plot, plotArgs)
+    abline(h = 0, lty = 3, col = "grey40")
+    abline(v = fit@xrange, col = 4, lty = 2, lwd = 2)
+
+    ypos <- grconvertY(0.9, from = "nfc", to = "user")
+    drawPeakMarkers(cov = params$cov,
+                    nPeaks = getPeakCount(fit@model),
+                    ypos = ypos,
+                    col = "grey",
+                    cex = 1.2)
+
+    legend("topright",
+          col = c(1, 4), lwd = c(1, 2), lty = c(1, 2),
+          legend = c("Residual", "Fit x-limits"))
+    return(invisible(NULL))
   }
 
   plotArgs <- c(list(count ~ mult, data = x@data,
@@ -711,10 +862,8 @@ plot.spectrum <- function(x,
     # Match app behavior by showing the fitted x-range boundaries.
     abline(v = fit@xrange, col = 4, lty = 2, lwd = 2)
 
-    fitInput <- list(mod = fit@model)
     probs   <- getProbs(fitInput)
     factors <- getFactors(fitInput)
-    params <- getModelParameters(fitInput, optimised = list(par = fit@par))
 
     points(
       xmin:xmax,
@@ -734,41 +883,62 @@ plot.spectrum <- function(x,
                     col = "grey",
                     cex = 1.2)
 
+    legendLabels <- c("Data", "Fit", "Fit x-limits")
+    legendCols   <- c(1, 2, 4)
+    legendLwd    <- c(1, 2, 2)
+    legendLty    <- c(0, 1, 2)
+    legendPch    <- c(1, NA, NA)
+
+    if(residualsMode == "overlay"){
+      # Rescale the residual onto the primary panel's y-range so it can
+      # share the plot, then label its true scale on a secondary axis.
+      usr        <- graphics::par("usr")
+      residRange <- range(resid, 0)
+      scaleResidual <- function(r){
+        (r - residRange[1]) / diff(residRange) * diff(usr[3:4]) + usr[3]
+      }
+      points(xmin:xmax, scaleResidual(resid), col = "darkgreen", type = "l", lty = 1, lwd = 2)
+      axisVals <- pretty(residRange)
+      axis(4, at = scaleResidual(axisVals), labels = axisVals,
+          col.axis = "darkgreen", col = "darkgreen")
+      mtext("Residual (observed - expected)", side = 4, line = 3, col = "darkgreen")
+
+      legendLabels <- c(legendLabels, "Residual")
+      legendCols   <- c(legendCols, "darkgreen")
+      legendLwd    <- c(legendLwd, 2)
+      legendLty    <- c(legendLty, 1)
+      legendPch    <- c(legendPch, NA)
+    }
+
     legend("topright",
-          col = c(1, 2, 4), lwd = c(1, 2, 2), lty = c(0, 1, 2),
-          pch = c(1, NA, NA),
-          legend = c("Data", "Fit", "Fit x-limits"))
+          col = legendCols, lwd = legendLwd, lty = legendLty, pch = legendPch,
+          legend = legendLabels)
   }
+
+  invisible(NULL)
 }
 
 
 
 #' Plot the deviation between a fit and its observed spectrum
 #'
-#' Plots the residual (observed minus expected k-mer count) between a
-#' spectrum's data and one of its stored fits, as a diagnostic for how
-#' well a fit obtained non-interactively with \code{fitSpectrum()} matches
-#' the data. This complements the fit overlay added to \code{plot.spectrum}:
-#' where that shows both curves together, \code{diagPlot} shows the
-#' difference between them directly.
-#'
-#' Expected peak positions for the fitted model are indicated with dashed
-#' grey vertical lines and \code{1x}, \code{2x}, etc. labels, matching the
-#' Shiny app display.
+#' A thin convenience wrapper around
+#' \code{plot(x, fitIndex = fitIndex, residuals = TRUE, ...)}, kept under
+#' its own name since it was the original entry point for this diagnostic.
+#' New code may prefer calling \code{plot()} directly with
+#' \code{residuals = TRUE} (residual only) or \code{residuals = "overlay"}
+#' (data and fit, with the residual on a secondary axis).
 #'
 #' @param x A \code{spectrum} object with at least one stored fit
-#' @param fitIndex Which stored fit to diagnose. Unlike \code{plot.spectrum},
-#'   a valid fit is required here, so \code{NA} is not accepted; an error
-#'   is raised if \code{x} has no stored fits or if \code{fitIndex} does
-#'   not refer to one of them. Defaults to \code{1}, the first stored fit.
-#' @param main (optional) A string passed to \code{plot()}
-#' @param xlab (optional) A string passed to \code{plot()}
-#' @param ylab (optional) A string passed to \code{plot()}
-#' @param ... other keyword arguments to be passed to \code{plot()}
+#' @param fitIndex Which stored fit to diagnose. Defaults to \code{1}. An
+#'   error is raised if \code{x} has no stored fits, or if \code{fitIndex}
+#'   does not refer to one of them.
+#' @param ... Additional arguments passed on to \code{plot.spectrum}, e.g.
+#'   \code{main}, \code{xlab}, \code{ylab}, or graphical parameters such
+#'   as \code{xlim}/\code{ylim}.
 #'
 #' @return NULL, invisibly
 #' @export
-#' @importFrom graphics grconvertY
 #' @examples
 #' \dontrun{
 #' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
@@ -776,45 +946,8 @@ plot.spectrum <- function(x,
 #' spec <- addFit(E030, fit)
 #' diagPlot(spec)
 #' }
-diagPlot <- function(x, fitIndex = 1, main, xlab, ylab, ...){
-  if(length(x@fits) == 0){
-    stop("diagPlot: spectrum '", x@name, "' has no stored fits.", call. = FALSE)
-  }
-  if(length(fitIndex) != 1 || is.na(fitIndex) ||
-     fitIndex < 1 || fitIndex > length(x@fits)){
-    stop("diagPlot: fitIndex ", fitIndex,
-         " does not exist in this spectrum's fits.", call. = FALSE)
-  }
-
-  fit <- x@fits[[fitIndex]]
-
-  if(missing(main)) main <- paste0(x@name, " -- fit ", fitIndex, " residuals")
-  if(missing(xlab)) xlab <- "K-mer multiplicity (coverage)"
-  if(missing(ylab)) ylab <- "Observed - expected k-mer count"
-
-  # Reuse the same machinery that builds the fit overlay in plot.spectrum,
-  # via the exported expectedSpectrum() method, rather than recomputing
-  # the expected counts by hand.
-  expected <- expectedSpectrum(fit)
-  observed <- x@data$count[match(expected@data$mult, x@data$mult)]
-  residual <- observed - expected@data$count
-
-  extraArgs <- list(...)
-  plotArgs <- c(list(x = expected@data$mult, y = residual, type = "l",
-                      main = main, xlab = xlab, ylab = ylab),
-                extraArgs)
-  do.call(plot, plotArgs)
-  abline(h = 0, lty = 3, col = "grey40")
-
-  params <- getModelParameters(list(mod = fit@model), optimised = list(par = fit@par))
-  ypos <- grconvertY(0.9, from = "nfc", to = "user")
-  drawPeakMarkers(cov = params$cov,
-                  nPeaks = getPeakCount(fit@model),
-                  ypos = ypos,
-                  col = "grey",
-                  cex = 1.2)
-
-  invisible(NULL)
+diagPlot <- function(x, fitIndex = 1, ...){
+  plot(x, fitIndex = fitIndex, residuals = TRUE, ...)
 }
 
 
