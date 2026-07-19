@@ -751,7 +751,7 @@ residuals.spectrum <- function(object, fitIndex = 1, xrange = NULL, ...){
 #'
 #' @return NULL, invisibly
 #' @export
-#' @importFrom graphics grconvertY axis mtext
+#' @importFrom graphics grconvertY axis mtext axTicks
 #' @examples
 #' plot(E030, log="xy")
 #' plot(E030, xlim=c(0,200), ylim=c(0,10000000))
@@ -799,6 +799,14 @@ plot.spectrum <- function(x,
 
   extraArgs <- list(...)
 
+  if(residualsMode == "overlay"){
+    # The secondary residual axis on the right needs more room than R's
+    # default right margin (2 lines) -- 5-6 character labels like "-20000"
+    # plus the axis title were getting clipped at the device edge.
+    oldPar <- graphics::par(mar = graphics::par("mar") + c(0, 0, 0, 3))
+    on.exit(graphics::par(oldPar), add = TRUE)
+  }
+
   fitInput <- NULL
   params   <- NULL
   resid    <- NULL
@@ -827,7 +835,39 @@ plot.spectrum <- function(x,
 
     if(residualsMode != "only"){
       if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
-      if(is.null(extraArgs$ylim)) extraArgs$ylim <- c(0, max(x@data$count[xmin:xmax]))
+
+      dataMax <- max(x@data$count[xmin:xmax], na.rm = TRUE)
+
+      if(residualsMode == "overlay"){
+        # Scale the residual so it shares the panel with the data/fit curve,
+        # anchoring residual = 0 at the *same* panel y-coordinate as
+        # count = 0, rather than the previous affine rescaling (which
+        # mapped range(resid, 0) onto the full panel range and let the two
+        # zero points drift apart whenever residuals weren't symmetric
+        # around zero). The residual gets up to ~40% of the data's own
+        # vertical span to plot in.
+        residMin  <- min(resid, 0, na.rm = TRUE)  # always <= 0
+        residMax  <- max(resid, 0, na.rm = TRUE)  # always >= 0
+        residSpan <- max(residMax, -residMin)
+        residScale <- if(residSpan > 0) (0.4 * dataMax) / residSpan else 1
+
+        if(is.null(extraArgs$ylim)){
+          # Tight fit: panel floor is exactly low enough for the scaled
+          # negative residual tail (or 0, if residuals are all >= 0); panel
+          # ceiling is the data/fit curve's own max, unchanged from before.
+          extraArgs$ylim <- c(min(0, residMin * residScale), dataMax)
+        } else {
+          # User supplied their own ylim -- keep it, but still need a scale
+          # factor that keeps the residual within whichever side of zero
+          # has less headroom, so it doesn't run off the panel.
+          headroom   <- min(extraArgs$ylim[2], -extraArgs$ylim[1])
+          residScale <- if(residSpan > 0 && is.finite(headroom) && headroom > 0){
+            headroom / residSpan
+          } else 1
+        }
+      } else if(is.null(extraArgs$ylim)){
+        extraArgs$ylim <- c(0, dataMax)
+      }
     }
   }
 
@@ -847,16 +887,18 @@ plot.spectrum <- function(x,
                     col = "grey",
                     cex = 1.2)
 
-    legend("topright",
-          col = c(1, 4), lwd = c(1, 2), lty = c(1, 2),
-          legend = c("Residual", "Fit x-limits"))
     return(invisible(NULL))
+  }
+
+  if(is.null(fit) && is.null(extraArgs$ylim)){
+    extraArgs$ylim <- c(0, max(x@data$count, na.rm = TRUE))
   }
 
   plotArgs <- c(list(count ~ mult, data = x@data,
                       main = main, xlab = xlab, ylab = ylab),
                 extraArgs)
   do.call(plot, plotArgs)
+  abline(h = 0, lty = 3, col = "grey40")
 
   if(!is.null(fit)){
     # Match app behavior by showing the fitted x-range boundaries.
@@ -883,24 +925,28 @@ plot.spectrum <- function(x,
                     col = "grey",
                     cex = 1.2)
 
-    legendLabels <- c("Data", "Fit", "Fit x-limits")
-    legendCols   <- c(1, 2, 4)
-    legendLwd    <- c(1, 2, 2)
-    legendLty    <- c(0, 1, 2)
-    legendPch    <- c(1, NA, NA)
+    legendLabels <- c("Data", "Fit")
+    legendCols   <- c(1, 2)
+    legendLwd    <- c(1, 2)
+    legendLty    <- c(0, 1)
+    legendPch    <- c(1, NA)
 
     if(residualsMode == "overlay"){
-      # Rescale the residual onto the primary panel's y-range so it can
-      # share the plot, then label its true scale on a secondary axis.
-      usr        <- graphics::par("usr")
-      residRange <- range(resid, 0)
-      scaleResidual <- function(r){
-        (r - residRange[1]) / diff(residRange) * diff(usr[3:4]) + usr[3]
-      }
-      points(xmin:xmax, scaleResidual(resid), col = "darkgreen", type = "l", lty = 1, lwd = 2)
-      axisVals <- pretty(residRange)
-      axis(4, at = scaleResidual(axisVals), labels = axisVals,
-          col.axis = "darkgreen", col = "darkgreen")
+      # Residual is drawn on the same panel using the zero-anchored
+      # residScale computed above (alongside this panel's ylim), so
+      # residual = 0 sits at exactly the same panel y-coordinate as
+      # count = 0 -- both are shown by the single abline(h = 0) already
+      # drawn above, rather than each axis having its own independent
+      # notion of where zero sits.
+      points(xmin:xmax, resid * residScale, col = "darkgreen", type = "l", lty = 1, lwd = 2)
+      # Use the SAME panel y-positions the left axis already chose (so both
+      # axes have matching tick counts and aligned rows), just relabelled
+      # in residual units by inverting the scale.
+      leftTicks <- axTicks(2)
+      usr <- graphics::par("usr")
+      leftTicks <- leftTicks[leftTicks >= usr[3] & leftTicks <= usr[4]]
+      axis(4, at = leftTicks, labels = signif(leftTicks / residScale, 2),
+          col.axis = "black", col = "darkgreen")
       mtext("Residual (observed - expected)", side = 4, line = 3, col = "darkgreen")
 
       legendLabels <- c(legendLabels, "Residual")
@@ -912,7 +958,9 @@ plot.spectrum <- function(x,
 
     legend("topright",
           col = legendCols, lwd = legendLwd, lty = legendLty, pch = legendPch,
-          legend = legendLabels)
+          legend = legendLabels, cex = 0.7, bty = "n",
+          y.intersp = 0.5, x.intersp = 0.5, seg.len = 1.2,
+          inset = c(-0.05, 0), xpd = TRUE)
   }
 
   invisible(NULL)
