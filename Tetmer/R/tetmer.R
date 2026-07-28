@@ -117,16 +117,16 @@ tetServer <- function(input, output, session, initialSpec) {
     }
   })
 
-  output$outText <- shiny::renderText({
+  output$outText <- shiny::renderUI({
     if (input$fitmod == "man") {
-      return(textOut(input, 0, rv$spec))
+      return(htmltools::tags$pre(textOut(input, 0, rv$spec)))
     }
 
     if (is.null(rv$optimised)) {
-      return("")
+      return(htmltools::tags$pre(""))
     }
 
-    textOut(input, rv$optimised, rv$spec)
+    textOutHtml(input, rv$optimised, rv$spec)
   })
 
   # Helper: render the plot given current inputs and reactive state
@@ -193,7 +193,7 @@ makeUI <- function(spec){
                     shiny::fluidRow(
                       shiny::column(8, shiny::plotOutput('plot')),
                       shiny::column(4,
-                             shiny::verbatimTextOutput("outText"),
+                             shiny::uiOutput("outText"),
 
                       )
                     ),
@@ -837,8 +837,13 @@ plot.spectrum <- function(x,
       if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
 
       dataMax <- max(x@data$count[xmin:xmax], na.rm = TRUE)
+      dataMin <- min(x@data$count[xmin:xmax], na.rm = TRUE)
 
       if(residualsMode == "overlay"){
+        if(!is.null(extraArgs$log) && grepl("y", extraArgs$log, fixed = TRUE)){
+          stop("plot.spectrum: `log` cannot include \"y\" when `residuals = \"overlay\"`.",
+               call. = FALSE)
+        }
         # Scale the residual so it shares the panel with the data/fit curve,
         # anchoring residual = 0 at the *same* panel y-coordinate as
         # count = 0, rather than the previous affine rescaling (which
@@ -866,7 +871,15 @@ plot.spectrum <- function(x,
           } else 1
         }
       } else if(is.null(extraArgs$ylim)){
-        extraArgs$ylim <- c(0, dataMax)
+        if(!is.null(extraArgs$log) && grepl("y", extraArgs$log, fixed = TRUE)){
+          # prepareSpectrum() pads missing multiplicities with count = 0,
+          # which is incompatible with a log y-axis; choose the smallest
+          # positive count in the plotted range instead.
+          positiveCounts <- x@data$count[xmin:xmax]
+          positiveCounts <- positiveCounts[is.finite(positiveCounts) & positiveCounts > 0]
+          dataMin <- if(length(positiveCounts) > 0) min(positiveCounts) else 1
+        }
+        extraArgs$ylim <- c(dataMin, dataMax)
       }
     }
   }
@@ -891,7 +904,14 @@ plot.spectrum <- function(x,
   }
 
   if(is.null(fit) && is.null(extraArgs$ylim)){
-    extraArgs$ylim <- c(0, max(x@data$count, na.rm = TRUE))
+    dataMax <- max(x@data$count, na.rm = TRUE)
+    dataMin <- min(x@data$count, na.rm = TRUE)
+    if(!is.null(extraArgs$log) && grepl("y", extraArgs$log, fixed = TRUE)){
+      positiveCounts <- x@data$count
+      positiveCounts <- positiveCounts[is.finite(positiveCounts) & positiveCounts > 0]
+      dataMin <- if(length(positiveCounts) > 0) min(positiveCounts) else 1
+    }
+    extraArgs$ylim <- c(dataMin, dataMax)
   }
 
   plotArgs <- c(list(count ~ mult, data = x@data,
@@ -958,9 +978,7 @@ plot.spectrum <- function(x,
 
     legend("topright",
           col = legendCols, lwd = legendLwd, lty = legendLty, pch = legendPch,
-          legend = legendLabels, cex = 0.7, bty = "n",
-          y.intersp = 0.5, x.intersp = 0.5, seg.len = 1.2,
-          inset = c(-0.05, 0), xpd = TRUE)
+          legend = legendLabels)
   }
 
   invisible(NULL)
@@ -1529,6 +1547,120 @@ textOut <- function(input, optimised, spec){
 
     return(paste0(base, ranges))
   }
+}
+
+#' Generate styled text for the Tetmer window (HTML)
+#'
+#' Like \code{textOut()}, but returns an HTML \code{<pre>} block that can
+#' highlight fitted parameters that land on the optimisation bounds.
+#'
+#' @param input Input from the GUI (contains plotting range, model, etc.)
+#' @param optimised Fitted values from \code{optim}.
+#' @param spec The current \code{spectrum} object.
+#'
+#' @return An HTML tag suitable for \code{shiny::renderUI()}.
+#' @keywords internal
+textOutHtml <- function(input, optimised, spec){
+  k    <- spec@k
+  hasK <- k > 0
+
+  perNuc <- function(val) {
+    if(hasK) paste0("\n theta per nucleotide: ", round(val / k, 5)) else ""
+  }
+  divergPerNuc <- function(val) {
+    if(hasK) paste0("\ndiverg per nucleotide: ", round(val / k, 4)) else ""
+  }
+
+  bounds <- buildOptimisationSpec(input)
+
+  boundStatus <- function(parName){
+    if(is.null(optimised) || is.null(optimised$par) || is.null(names(optimised$par))) {
+      return(list(on = FALSE, where = NULL))
+    }
+    if(!(parName %in% names(optimised$par))) return(list(on = FALSE, where = NULL))
+    if(!(parName %in% names(bounds$lower)) || !(parName %in% names(bounds$upper))) {
+      return(list(on = FALSE, where = NULL))
+    }
+
+    value <- unname(optimised$par[parName])
+    lower <- unname(bounds$lower[parName])
+    upper <- unname(bounds$upper[parName])
+
+    if(!is.finite(value) || !is.finite(lower) || !is.finite(upper)) {
+      return(list(on = FALSE, where = NULL))
+    }
+
+    span <- max(1, abs(upper - lower), abs(value), abs(lower), abs(upper))
+    tol  <- 1e-8 * span
+
+    onLower <- abs(value - lower) <= tol
+    onUpper <- abs(value - upper) <= tol
+    if(onLower) return(list(on = TRUE, where = "lower bound"))
+    if(onUpper) return(list(on = TRUE, where = "upper bound"))
+    list(on = FALSE, where = NULL)
+  }
+
+  fmtBounded <- function(parName, display){
+    st <- boundStatus(parName)
+    if(!isTRUE(st$on)) return(htmltools::htmlEscape(display))
+
+    htmltools::HTML(paste0(
+      "<span style=\"color:#b00020;font-weight:bold;\" title=\"at ", st$where, "\">",
+      htmltools::htmlEscape(display),
+      "</span>"
+    ))
+  }
+
+  label  <- getModelLabel(input$mod)
+  params <- getModelParameters(input, optimised = optimised)
+
+  base <- paste0(
+    htmltools::htmlEscape(label), " MODEL, AUTO FITTED",
+    if(hasK) paste0("\n         k-mer length: ", htmltools::htmlEscape(as.character(k))) else "",
+    "\n  monoploid k-mer cov: ", fmtBounded("cov", as.character(round(params$cov, 3))),
+    "\n      theta per k-mer: ", fmtBounded("theta", as.character(round(params$theta, 4))),
+    perNuc(params$theta),
+    "\n     non-rep GS (Mbp): ", fmtBounded("haplSize", as.character(round(params$gs, 1))),
+    "\n variance factor (vf): ", fmtBounded("vf", as.character(round(params$vf, 2)))
+  )
+
+  if(modelUsesDivergence(input$mod)){
+    divergVal <- params$theta * params$diverg
+    base <- paste0(base,
+      "\n                    T: ", fmtBounded("diverg", as.character(round(params$diverg, 2))),
+      "\n     diverg per k-mer: ", htmltools::htmlEscape(as.character(round(divergVal, 4))),
+      divergPerNuc(divergVal)
+    )
+  }
+  if(modelUsesPallo(input$mod)){
+    base <- paste0(base,
+      "\n       prop. allotet.: ", fmtBounded("pallo", as.character(round(params$pallo, 2)))
+    )
+  }
+
+  ranges <- paste0(
+    "\n\nSTARTING RANGES (MIN MAX)",
+    "\n  monoploid k-mer cov: ", htmltools::htmlEscape(as.character(input$akcov[1])), " ", htmltools::htmlEscape(as.character(input$akcov[2])),
+    "\nlog10 theta per k-mer: ", htmltools::htmlEscape(as.character(input$ath[1])), " ", htmltools::htmlEscape(as.character(input$ath[2])),
+    "\n     non-rep GS (Mbp): ", htmltools::htmlEscape(as.character(input$ayadj[1])), " ", htmltools::htmlEscape(as.character(input$ayadj[2])),
+    "\n variance factor (vf): ", htmltools::htmlEscape(as.character(input$avf[1])), " ", htmltools::htmlEscape(as.character(input$avf[2])),
+    "\n              x range: ", htmltools::htmlEscape(as.character(input$axrange[1])), " ", htmltools::htmlEscape(as.character(input$axrange[2]))
+  )
+
+  if(modelUsesDivergence(input$mod)){
+    ranges <- paste0(ranges,
+      "\n                    T: ", htmltools::htmlEscape(as.character(input$adiv[1])), " ", htmltools::htmlEscape(as.character(input$adiv[2]))
+    )
+  }
+  if(modelUsesPallo(input$mod)){
+    ranges <- paste0(ranges,
+      "\n       prop. allotet.: ", htmltools::htmlEscape(as.character(input$apallo[1])), " ", htmltools::htmlEscape(as.character(input$apallo[2]))
+    )
+  }
+
+  note <- "\n\n(red = parameter at bound)"
+
+  htmltools::tags$pre(htmltools::HTML(paste0(base, ranges, note)))
 }
 
 
