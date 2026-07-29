@@ -67,27 +67,31 @@ plot(E030, log = "xy")
 
 A `tetmerFit` object is produced by `fitSpectrum()` (see the
 "Non-interactive fitting with fitSpectrum" vignette) or by clicking
-**Done** after an Autofit run in the interactive app. It records eight
-slots: `model`, `par`, `ranges`, `xrange`, `convergence`, `value`, `k`,
-and `version`.
+**Done** in the interactive app. It records nine slots: `fitType`,
+`model`, `par`, `ranges`, `xrange`, `convergence`, `value`, `k`, and
+`version`.
 
 ```{r}
 fit <- fitSpectrum(E030,
                     model  = "d",
                     kcov   = c(50, 200),
                     vf     = c(1, 10),
-                    theta  = c(-2, 0.6),
-                    gs     = c(6, 9),
+                    log10theta = c(-2, 0.6),
+                    log10Mbp   = c(0, 3),
                     xrange = c(45, 250))
 fit
 slotNames(fit)
 fit@par
 ```
 
-`par` holds the fitted parameter values, `ranges` records the bounds
-that were searched, `xrange` records the multiplicity range the fit
-was computed over, and `convergence`/`value` come directly from the
-underlying call to `optim()`. `version` records the Tetmer version
+`fitType` records whether the fit came from Autofit (`"auto"`) or from
+the current Manual settings (`"manual"`). `par` holds the fitted
+parameter values, `ranges` records the bounds that were searched for
+auto fits, `xrange` records the multiplicity range the fit was computed
+over, and `convergence`/`value` come directly from the underlying call to
+`optim()` for auto fits. Theta ranges are stored as `log10theta`, and
+genome-size ranges are stored as `log10Mbp`, the log10 of the monoploid
+non-repetitive genome size in Mbp. `version` records the Tetmer version
 used, which is useful when comparing fits produced at different times.
 
 ## Attaching a fit to its spectrum: addFit()
@@ -110,8 +114,8 @@ fit_narrower <- fitSpectrum(E030,
                              model  = "d",
                              kcov   = c(90, 120),
                              vf     = c(1, 10),
-                             theta  = c(-2, 0.6),
-                             gs     = c(6, 9),
+                             log10theta = c(-2, 0.6),
+                             log10Mbp   = c(0, 3),
                              xrange = c(45, 250))
 spec_with_fits <- addFit(spec_with_fit, fit_narrower)
 spec_with_fits
@@ -121,9 +125,9 @@ spec_with_fits
 
 `write.spectrum()` writes a `spectrum` object to a plain text file.
 The spectrum data are written as two columns, preceded by a block of
-`#`-prefixed comment lines recording the spectrum's name and k-mer
-length, and -- for each stored fit -- its model, fitted parameters,
-parameter ranges, and convergence information:
+`#TETMER`-prefixed comment lines recording the spectrum's name and
+k-mer length, and -- for each stored fit -- its model, fitted
+parameters, parameter ranges, and convergence information:
 
 ```{r}
 tf <- tempfile(fileext = ".txt")
@@ -133,9 +137,8 @@ cat(readLines(tf, n = 15), sep = "\n")
 
 Because the metadata lines start with `#`, the file remains a valid
 plain-text k-mer spectrum: it can be inspected with any text editor or
-scrolled through with `less`, and it can be read by any tool that
-expects a two-column, `#`-commented spectrum file, including Tetmer's
-own `read.spectrum()`.
+scrolled through with `less`, and it can be read by tools that expect a
+two-column, `#`-commented spectrum file.
 
 ## Re-importing with read.spectrum()
 
@@ -148,14 +151,75 @@ reloaded
 all.equal(reloaded@data, spec_with_fit@data, check.attributes = FALSE)
 ```
 
-Note that `read.spectrum()` restores the spectrum data itself, but not
-the fit records: the `# fit.*` metadata lines written by
-`write.spectrum()` are for human inspection and downstream reference
-rather than being parsed back in, so `reloaded@fits` is an empty list
-even though the file on disk records one fit. If you need to keep
-working with a fit programmatically, keep a reference to the
-`tetmerFit` object (or the `spectrum` it was added to) in your R
-session, rather than relying on re-reading the exported file.
+For files written by `write.spectrum()`, `read.spectrum()` also restores
+the `#TETMER` metadata, including any stored fit records. Explicit
+`nam =` and `k =` arguments still override the name and k-mer length
+recorded in the file.
+
+## Tetmer spectrum text format
+
+Tetmer spectrum files are plain text. Lines beginning with `#TETMER `
+are Tetmer metadata. Other lines beginning with `#` are ordinary
+comments, which makes the files compatible with tools that expect
+commented two-column k-mer spectra. The spectrum data follow the
+metadata as two whitespace-separated columns:
+
+- `mult`: k-mer multiplicity
+- `count`: k-mer count
+
+### Format 1
+
+The current text format is identified by:
+
+```text
+#TETMER format: 1
+```
+
+The following metadata fields are written once per spectrum:
+
+```text
+#TETMER tetmer.version: <character>
+#TETMER name: <character>
+#TETMER k: <number>
+#TETMER fits: <integer>
+```
+
+The `tetmer.version` field records the Tetmer package version that wrote
+the file. The `format` field records the text-file format version and is
+the field readers should use to decide how to parse the file.
+
+For each stored fit `i`, where `i` runs from `1` to `fits`, Tetmer writes
+these fields:
+
+```text
+#TETMER fit.i.fitType: <manual|auto>
+#TETMER fit.i.model: <character>
+#TETMER fit.i.k: <number>
+#TETMER fit.i.version: <character>
+#TETMER fit.i.convergence: <number>
+#TETMER fit.i.value: <number>
+#TETMER fit.i.xrange: <number> <number>
+```
+
+Fitted parameters and optimisation ranges are written with one line per
+named entry:
+
+```text
+#TETMER fit.i.par.<name>: <number>
+#TETMER fit.i.range.<name>: <number> <number>
+```
+
+Theta optimisation ranges use the name `log10theta`; genome-size
+optimisation ranges use the name `log10Mbp`.
+
+After the metadata and any ordinary comment lines, the spectrum itself is
+stored as whitespace-separated data:
+
+```text
+# mult count
+1 123
+2 456
+```
 
 ## Putting it together
 
@@ -169,8 +233,8 @@ fit  <- fitSpectrum(spec,
                      model  = "d",
                      kcov   = c(5, 200),
                      vf     = c(1, 10),
-                     theta  = c(-2, 0.6),
-                     gs     = c(6, 9),
+                     log10theta = c(-2, 0.6),
+                     log10Mbp   = c(0, 3),
                      xrange = c(45, 250))
 spec <- addFit(spec, fit)
 write.spectrum(spec, "mySample_fitted.txt")

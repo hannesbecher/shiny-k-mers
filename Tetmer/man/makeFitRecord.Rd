@@ -4,12 +4,13 @@
 \alias{makeFitRecord}
 \title{Create a fit record from the current app state}
 \usage{
-makeFitRecord(input, optimised, k)
+makeFitRecord(input, optimised = NULL, k)
 }
 \arguments{
 \item{input}{Input from Shiny GUI}
 
-\item{optimised}{Result from \code{doOptimisation}}
+\item{optimised}{Result from \code{doOptimisation}; leave \code{NULL}
+for manual fits}
 
 \item{k}{Numeric k-mer length}
 }
@@ -17,6 +18,6 @@ makeFitRecord(input, optimised, k)
 A \code{tetmerFit} object
 }
 \description{
-Constructs a \code{tetmerFit} object from the current Shiny input
-and optimisation result.
+Constructs a \code{tetmerFit} object from the current Shiny input and,
+for auto fits, an optimisation result.
 }

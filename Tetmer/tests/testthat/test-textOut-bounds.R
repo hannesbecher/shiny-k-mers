@@ -10,7 +10,7 @@ makeAutoInput_simple <- function(mod = "d") {
     akcov   = c(10, 100),
     avf     = c(1, 10),
     ath     = c(-2, 0.6),
-    ayadj   = c(6, 9),
+    ayadj   = c(0, 3),
     axrange = c(45, 200)
   )
 }

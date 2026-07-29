@@ -62,9 +62,9 @@ result <- tetmer(E030)
 The app opens with the spectrum plotted in the top-left panel and a
 text summary in the top-right panel. Below that, a row of control
 panels lets you choose the fitting mode, the ploidy/model, and the
-relevant parameter ranges. Clicking **Done** closes the app and
-returns an updated `spectrum` object -- with the current fit appended
-to its `fits` slot if Autofit was used -- which is why the call above
+relevant parameter ranges. Clicking **Done** closes the app and returns
+an updated `spectrum` object with the current Manual fit or current
+Autofit result appended to its `fits` slot, which is why the call above
 assigns the result to `result`.
 
 ## Manual mode
@@ -82,7 +82,7 @@ rather than ranges, for:
   are relative to their mean -- the noisier the sequencing data, the
   wider the peaks,
 - theta, the genome-wide heterozygosity per k-mer,
-- the monoploid non-repetitive genome size (in Mbp).
+- the monoploid non-repetitive genome size (log10 Mbp).
 
 For allopolyploid models, a further panel appears for the divergence
 time between sub-genomes, expressed in units of 2*Ne*.
@@ -104,7 +104,8 @@ as the fitting mode, then set:
    high enough to include all relevant peaks of the spectrum
    (roughly, ploidy times haploid sequencing coverage).
 2. **Parameter ranges** for k-mer coverage, variance factor, theta, and
-   genome size. Tetmer searches within these bounds for the
+   genome size. Theta and genome size use log10 scales, with genome size
+   expressed as log10(Mbp). Tetmer searches within these bounds for the
    combination that best matches the data.
 
 If the range for the k-mer coverage is too wide, Tetmer can converge
@@ -128,7 +129,7 @@ manual mode.
 
 ## Saving the fit
 
-Once you are satisfied with a fit obtained in Autofit mode, click
+Once you are satisfied with a fit obtained in Manual or Autofit mode, click
 **Done**. The app closes and returns a `spectrum` object with the fit
 recorded:
 

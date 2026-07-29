@@ -13,12 +13,12 @@
   tdiverg = 30,
   pallo   = 0,
   # Auto fitting range defaults
-  agsl    = 6,
-  agsh    = 9,
+  agsl    = 0,
+  agsh    = 3,
   akcovl  = 10,
   akcovh  = 100,
   avfl    = 1,
-  avfh    = 10,
+  avfh    = 3,
   athl    = -2,
   athh    = 0.6,
   adivl   = 0.1,
@@ -29,12 +29,12 @@
   apalloh  = 0.99
 )
 
-.defaultSliderRanges <- list(gsMin=3,
-                             gsMax=10,
+.defaultSliderRanges <- list(gsMin=-3,
+                             gsMax=4,
                              kcovMin=5,
                              kcovMax=300,
                              vfMin=1,
-                             vfMax=100,
+                             vfMax=10,
                              thMin=-4,
                              thMax=1,
                              divMin=0.001,
@@ -159,8 +159,9 @@ tetServer <- function(input, output, session, initialSpec) {
   })
 
   shiny::observeEvent(input$done, {
-    # Build updated spectrum with fit stored (only if autofit was run)
-    if(!is.null(rv$optimised)){
+    # Build updated spectrum with fit stored. Manual mode stores the current
+    # point values; auto mode stores the optimiser result when available.
+    if(input$fitmod == "man" || !is.null(rv$optimised)){
       fit     <- makeFitRecord(input, rv$optimised, rv$spec@k)
       updated <- addFit(rv$spec, fit)
     } else {
@@ -169,49 +170,26 @@ tetServer <- function(input, output, session, initialSpec) {
     shiny::stopApp(updated)
   })
 
-  shiny::observeEvent(input$histFile, {
-    fPath <- input$histFile$datapath
-    fName <- input$histFile$name
-    rv$spec <- prepareSpectrum(
-      read.spectrum(fPath,
-                    nam = strsplit(fName, "[.]")[[1]][[1]],
-                    k = input$kVal)
-    )
-    rv$optimised <- NULL
-    shiny::updateNumericInput(session, "kVal", value = rv$spec@k)
-  })
-
 }
 
 
 # User interface ####
 
-makeUI <- function(spec){
+makeUI <- function(){
   currentSliderRanges <- sliderRanges()
   shiny::fluidPage(shiny::titlePanel("Tetmer v2.3.2"),
-                    "Fitting population parameters to k-mer spectra (by Hannes Becher)",
+                    "Fitting population parameters to k-mer spectra",
                     shiny::fluidRow(
                       shiny::column(8, shiny::plotOutput('plot')),
                       shiny::column(4,
                              shiny::uiOutput("outText"),
-
+                             shiny::div(
+                               style = "margin-top: 10px;",
+                               shiny::actionButton("done", "Done", icon=shiny::icon("check"),
+                                                   class="btn-success")
+                             )
                       )
                     ),
-            shiny::fluidRow(
-              shiny::column(4,
-                     shiny::numericInput("kVal", "Specify k-mer size before loading data", spec@k)
-              ),
-              shiny::column(4,
-                     shiny::fileInput("histFile", "Choose or drop spectrum file")
-              ),
-              shiny::column(4,
-                     shiny::fluidRow(
-                       shiny::actionButton("done", "Done", icon=shiny::icon("check"),
-                                    class="btn-success")
-                     )
-              )
-
-            ),
                     shiny::fluidRow(
                       shiny::column(3,
 
@@ -238,11 +216,11 @@ makeUI <- function(spec){
                              shiny::conditionalPanel(condition = "input.fitmod == 'man'",
                                               shiny::wellPanel(
                                                 shiny::h4("3rd: Param ranges"),
-                                                shiny::numericInput('tkcov', 'Monoploid k-mer multiplicity', .tetmerDefaults$tkcov),
+                                                shiny::numericInput('tkcov', 'Monopl k-mer multiplicity (x1)', .tetmerDefaults$tkcov),
                                                 shiny::numericInput('tvf', 'Variance factor (vf)', .tetmerDefaults$tvf,
                                                              min = 1, step = 0.1),
                                                 shiny::numericInput('tth', 'theta', .tetmerDefaults$tth),
-                                                shiny::numericInput('tyadj', 'Monoploid non-rep GS (Mbp)', .tetmerDefaults$tyadj)
+                                                shiny::numericInput('tyadj', 'Monopl non-rep GS (Mbp)', .tetmerDefaults$tyadj)
                                               ))),
                       shiny::column(3,
                              shiny::conditionalPanel(condition = "(input.fitmod == 'man') && (['tal', 'traab', 'tse'].includes(input.mod))",
@@ -268,7 +246,7 @@ makeUI <- function(spec){
                              shiny::conditionalPanel(condition = "input.fitmod == 'auto'",
                                               shiny::wellPanel(shiny::h4("3rd: Param ranges"),
 
-                                                        shiny::sliderInput('akcov', 'k-mer  multiplicity',
+                                                        shiny::sliderInput('akcov', 'k-mer multiplicity (x1)',
                                                                     min=currentSliderRanges$kcovMin, max = currentSliderRanges$kcovMax,
                                                                     value=c(.tetmerDefaults$akcovl, .tetmerDefaults$akcovh)),
                                                         shiny::sliderInput('avf', 'Variance factor (vf)',
@@ -277,7 +255,7 @@ makeUI <- function(spec){
                                                         shiny::sliderInput('ath', "log10 of theta",
                                                                     min=currentSliderRanges$thMin, max = currentSliderRanges$thMax, step = 0.05,
                                                                     value=c(.tetmerDefaults$athl, .tetmerDefaults$athh)),
-                                                        shiny::sliderInput('ayadj', 'Monoploid non-rep GS (Mbp)',
+                                                        shiny::sliderInput('ayadj', 'log10 monopl non-rep GS (Mbp)',
                                                                     min=currentSliderRanges$gsMin, max = currentSliderRanges$gsMax,
                                                                     value=c(.tetmerDefaults$agsl, .tetmerDefaults$agsh))
                                               ))),
@@ -309,8 +287,10 @@ makeUI <- function(spec){
 #'
 #' @param sp A \code{spectrum} object as generated by \code{read.spectrum}.
 #'
-#' @return A \code{spectrum} object. If the app is closed without pressing
-#'   Done, the original input spectrum is returned unchanged.
+#' @return A \code{spectrum} object. Pressing Done appends the current
+#'   manual fit or current autofit result to the spectrum's \code{fits}
+#'   slot. If the app is closed without pressing Done, the original input
+#'   spectrum is returned unchanged.
 #' @export
 #'
 #' @examples \dontrun{result <- tetmer(E028)}
@@ -327,7 +307,7 @@ tetmer <- function(sp=E028){
   }
   # runApp returns the value passed to shiny::stopApp(); if the app is closed
   # without pressing Done, runApp returns NULL.
-  result <- shiny::runApp(shiny::shinyApp(ui = makeUI(spec), server = server))
+  result <- shiny::runApp(shiny::shinyApp(ui = makeUI(), server = server))
   result <- resolveTetmerAppResult(result, spec)
   invisible(result)
 }
@@ -346,11 +326,13 @@ resolveTetmerAppResult <- function(result, originalSpec){
 
 #' A stored Tetmer fit result
 #'
-#' Stores the result of a single Tetmer model fit, including the model type,
-#' fitted parameters, parameter ranges used in optimisation, the x range
-#' of the spectrum used for fitting, convergence information, and the
-#' version of Tetmer used.
+#' Stores the result of a single Tetmer model fit, including the fit type,
+#' model type, fitted parameters, parameter ranges used in optimisation, the
+#' x range of the spectrum used for fitting, convergence information, and
+#' the version of Tetmer used.
 #'
+#' @slot fitType A string indicating whether the fit was produced manually
+#'   (\code{"manual"}) or by optimisation (\code{"auto"}).
 #' @slot model A string indicating the model type (e.g. "d", "tal", "tau")
 #' @slot par A named numeric vector of fitted parameters
 #' @slot ranges A named list of parameter ranges used in optimisation
@@ -364,6 +346,7 @@ resolveTetmerAppResult <- function(result, originalSpec){
 #' @export
 #' @importFrom methods setClass
 setClass("tetmerFit", slots = list(
+  fitType     = "character",
   model       = "character",
   par         = "numeric",
   ranges      = "list",
@@ -372,7 +355,7 @@ setClass("tetmerFit", slots = list(
   value       = "numeric",
   k           = "numeric",
   version     = "character"
-))
+), prototype = list(fitType = "auto"))
 
 #' A named k-mer spectrum class
 #'
@@ -413,6 +396,7 @@ setMethod("show", "spectrum", function(object){
     for(i in seq_len(nFits)){
       fit <- object@fits[[i]]
       cat("    Fit", i, "-- model:", fit@model,
+          "| type:", fit@fitType,
           "| convergence:", fit@convergence,
           "| Tetmer version:", fit@version, "\n")
     }
@@ -425,6 +409,7 @@ setMethod("show", "spectrum", function(object){
 #' @export
 setMethod("show", "tetmerFit", function(object){
   cat("Tetmer fit result:\n")
+  cat("  Fit type:", object@fitType, "\n")
   cat("  Model:", object@model, "\n")
   cat("  k-mer length:", object@k, "\n")
   cat("  x range used:", object@xrange[1], "--", object@xrange[2], "\n")
@@ -435,24 +420,57 @@ setMethod("show", "tetmerFit", function(object){
   for(nm in names(object@par)){
     cat("   ", nm, ":", object@par[nm], "\n")
   }
+  if(length(object@ranges) > 0){
+    cat("  Ranges:\n")
+    for(nm in names(object@ranges)){
+      label <- switch(nm,
+                      log10theta = "log10 theta",
+                      log10Mbp = "log10 GS (Mbp)",
+                      nm)
+      cat("   ", label, ":", paste(object@ranges[[nm]], collapse = " "), "\n")
+    }
+  }
 })
 
 #' Create a fit record from the current app state
 #'
-#' Constructs a \code{tetmerFit} object from the current Shiny input
-#' and optimisation result.
+#' Constructs a \code{tetmerFit} object from the current Shiny input and,
+#' for auto fits, an optimisation result.
 #'
 #' @param input Input from Shiny GUI
-#' @param optimised Result from \code{doOptimisation}
+#' @param optimised Result from \code{doOptimisation}; leave \code{NULL}
+#'   for manual fits
 #' @param k Numeric k-mer length
 #'
 #' @return A \code{tetmerFit} object
 #' @export
 #' @importFrom methods new
 #' @importFrom utils packageVersion
-makeFitRecord <- function(input, optimised, k){
+makeFitRecord <- function(input, optimised = NULL, k){
+  if(is.null(optimised)){
+    params <- getModelParameters(input)
+    fitPar <- c(cov = params$cov,
+                vf = params$vf,
+                theta = params$theta,
+                haplSize = params$gs)
+    if(modelUsesDivergence(input$mod)) fitPar <- c(fitPar, diverg = params$diverg)
+    if(modelUsesPallo(input$mod)) fitPar <- c(fitPar, pallo = params$pallo)
+
+    return(new("tetmerFit",
+      fitType     = "manual",
+      model       = input$mod,
+      par         = unlist(fitPar),
+      ranges      = list(),
+      xrange      = c(1, input$txmax),
+      convergence = NA_real_,
+      value       = NA_real_,
+      k           = k,
+      version     = as.character(packageVersion("Tetmer"))))
+  }
+
   fitConfig <- asAutoFitConfig(input)
   new("tetmerFit",
+      fitType     = "auto",
       model       = fitConfig$model,
       par         = optimised$par,
       ranges      = fitConfig$ranges,
@@ -480,7 +498,10 @@ addFit <- function(spec, fit){
 
 #' Read in a k-mer spectrum
 #'
-#' Uses \code{read.table()} to read in a k-mer spectrum.
+#' Uses \code{read.table()} to read in a k-mer spectrum. For files written by
+#' \code{write.spectrum()}, \code{#TETMER}-prefixed metadata lines are used to
+#' restore the spectrum name, k-mer length, and any stored \code{tetmerFit}
+#' objects.
 #'
 #' @param f A string indicating the path to the spectrum file
 #' @param nam (optional) A string indicating the name of the spectrum
@@ -509,6 +530,16 @@ read.spectrum <- function(f,
                           cropAt=1000,
                           no0=FALSE,
                           ...){
+  namProvided <- !missing(nam)
+  kProvided <- !missing(k)
+  metadata <- parseTetmerSpectrumMetadata(readTetmerSpectrumHeader(f))
+  if(!namProvided && !is.null(metadata$name)){
+    nam <- metadata$name
+  }
+  if(!kProvided && !is.null(metadata$k)){
+    k <- metadata$k
+  }
+
   sp <- read.table(f, ...)
   sp <- sp[sp[,1] <= cropAt,]
   names(sp) = c("mult", "count")
@@ -516,7 +547,7 @@ read.spectrum <- function(f,
              name=nam,
              data=sp,
              k=k,
-             fits=list()
+             fits=metadata$fits
   )
   if(no0==FALSE) {
     return(prepareSpectrum(spc))
@@ -524,6 +555,143 @@ read.spectrum <- function(f,
     return(spc)
   }
 
+}
+
+#' Read Tetmer metadata header lines from a spectrum file
+#'
+#' @param f A file path
+#'
+#' @return A character vector of leading comment lines
+#' @noRd
+readTetmerSpectrumHeader <- function(f){
+  if(!is.character(f) || length(f) != 1){
+    return(character())
+  }
+
+  con <- file(f, open = "rt")
+  on.exit(close(con))
+  header <- character()
+  repeat {
+    line <- readLines(con, n = 1, warn = FALSE)
+    if(length(line) == 0 || !grepl("^\\s*#", line)){
+      break
+    }
+    header <- c(header, line)
+  }
+  header
+}
+
+#' Parse Tetmer metadata from spectrum comment lines
+#'
+#' @param header A character vector of leading comment lines
+#'
+#' @return A list with entries \code{name}, \code{k}, and \code{fits}
+#' @noRd
+parseTetmerSpectrumMetadata <- function(header){
+  metadata <- list(name = NULL, k = NULL, fits = list())
+  if(length(header) == 0){
+    return(metadata)
+  }
+  if(!any(grepl("^\\s*#TETMER\\s+", header))){
+    return(metadata)
+  }
+
+  fields <- parseTetmerHeaderFields(header)
+  if(length(fields) == 0){
+    return(metadata)
+  }
+
+  if("name" %in% names(fields)){
+    metadata$name <- fields[["name"]]
+  }
+  if("k" %in% names(fields)){
+    metadata$k <- parseTetmerNumeric(fields[["k"]])
+  }
+  if("fits" %in% names(fields)){
+    nFits <- parseTetmerNumeric(fields[["fits"]])
+    if(length(nFits) == 1 && !is.na(nFits) && nFits > 0){
+      metadata$fits <- lapply(seq_len(nFits), parseTetmerFit, fields = fields)
+    }
+  }
+
+  metadata
+}
+
+#' Parse colon-separated Tetmer header fields
+#'
+#' @param header A character vector of leading comment lines
+#'
+#' @return A named character vector of header values
+#' @noRd
+parseTetmerHeaderFields <- function(header){
+  lines <- grep("^\\s*#TETMER\\s+", header, value = TRUE)
+  lines <- sub("^\\s*#TETMER\\s+", "", lines)
+  hasField <- grepl("^[^:]+:", lines)
+  lines <- lines[hasField]
+  if(length(lines) == 0){
+    return(character())
+  }
+
+  keys <- trimws(sub(":.*$", "", lines))
+  values <- trimws(sub("^[^:]+:\\s*", "", lines))
+  stats::setNames(values, keys)
+}
+
+#' Parse one stored fit from Tetmer header fields
+#'
+#' @param index Integer fit index
+#' @param fields A named character vector of header values
+#'
+#' @return A \code{tetmerFit} object
+#' @noRd
+parseTetmerFit <- function(index, fields){
+  prefix <- paste0("fit.", index, ".")
+  parPrefix <- paste0(prefix, "par.")
+  rangePrefix <- paste0(prefix, "range.")
+  fitType <- fields[[paste0(prefix, "fitType")]]
+  if(is.null(fitType)){
+    fitType <- "auto"
+  }
+
+  parKeys <- names(fields)[startsWith(names(fields), parPrefix)]
+  fitPar <- vapply(fields[parKeys], parseTetmerNumeric, numeric(1))
+  names(fitPar) <- sub(parPrefix, "", names(fitPar), fixed = TRUE)
+
+  rangeKeys <- names(fields)[startsWith(names(fields), rangePrefix)]
+  if(length(rangeKeys) == 0){
+    ranges <- list()
+  } else {
+    ranges <- lapply(fields[rangeKeys], parseTetmerNumeric)
+    names(ranges) <- sub(rangePrefix, "", names(ranges), fixed = TRUE)
+  }
+
+  new("tetmerFit",
+      fitType     = fitType,
+      model       = fields[[paste0(prefix, "model")]],
+      par         = fitPar,
+      ranges      = ranges,
+      xrange      = parseTetmerNumeric(fields[[paste0(prefix, "xrange")]]),
+      convergence = parseTetmerNumeric(fields[[paste0(prefix, "convergence")]]),
+      value       = parseTetmerNumeric(fields[[paste0(prefix, "value")]]),
+      k           = parseTetmerNumeric(fields[[paste0(prefix, "k")]]),
+      version     = fields[[paste0(prefix, "version")]])
+}
+
+#' Parse numeric values from a Tetmer metadata value
+#'
+#' @param value A character scalar
+#'
+#' @return A numeric vector
+#' @noRd
+parseTetmerNumeric <- function(value){
+  if(is.null(value)){
+    return(numeric())
+  }
+  values <- strsplit(trimws(value), "\\s+")[[1]]
+  if(all(values %in% c("NA", "NaN"))){
+    return(rep(NA_real_, length(values)))
+  }
+  as.numeric(values)
 }
 
 
@@ -543,10 +711,10 @@ read.spectrum <- function(f,
 #'   monoploid k-mer coverage
 #' @param vf Numeric vector of length 2: lower and upper bounds for
 #'   variance factor (vf), where variance equals vf times the mean
-#' @param theta Numeric vector of length 2: lower and upper bounds for
-#'   log10 of theta per k-mer
-#' @param gs Numeric vector of length 2: lower and upper bounds for
-#'   log10 of haploid genome size in Mbp (e.g. \code{c(6, 9)})
+#' @param log10theta Numeric vector of length 2: lower and upper bounds
+#'   for log10 of theta per k-mer
+#' @param log10Mbp Numeric vector of length 2: lower and upper bounds for
+#'   log10 of haploid genome size in Mbp (e.g. \code{c(0, 3)})
 #' @param xrange Numeric vector of length 2: lower and upper multiplicity
 #'   bounds of the spectrum to use for fitting
 #' @param diverg Numeric vector of length 2: lower and upper bounds for
@@ -567,8 +735,8 @@ read.spectrum <- function(f,
 #'                   model  = "d",
 #'                   kcov   = c(5, 100),
 #'                   vf     = c(1, 100),
-#'                   theta  = c(-3, 0),
-#'                   gs     = c(6, 9),
+#'                   log10theta = c(-3, 0),
+#'                   log10Mbp   = c(0, 3),
 #'                   xrange = c(45, 200))
 #' fit
 #' spec <- addFit(E030, fit)
@@ -578,8 +746,8 @@ fitSpectrum <- function(spec,
                         model,
                         kcov,
                         vf,
-                        theta,
-                        gs,
+                        log10theta,
+                        log10Mbp,
                         xrange,
                         diverg      = c(0.1, 100),
                         pallo       = c(0.01, 0.99),
@@ -588,8 +756,8 @@ fitSpectrum <- function(spec,
     model = model,
     kcov = kcov,
     vf = vf,
-    theta = theta,
-    gs = gs,
+    log10theta = log10theta,
+    log10Mbp = log10Mbp,
     xrange = xrange,
     diverg = diverg,
     pallo = pallo
@@ -689,7 +857,8 @@ getStoredFit <- function(x, fitIndex, caller, requireFit = FALSE){
 #' @examples
 #' \dontrun{
 #' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
-#'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+#'                      log10theta = c(-4, -1), log10Mbp = c(0, 3),
+#'                      xrange = c(45, 200))
 #' spec <- addFit(E030, fit)
 #' residuals(spec)
 #' residuals(spec, xrange = c(45, 300))
@@ -745,6 +914,17 @@ residuals.spectrum <- function(object, fitIndex = 1, xrange = NULL, ...){
 #'   them in. \code{"overlay"} plots the data and fit as usual, with the
 #'   residual additionally drawn on a secondary y-axis on the right-hand
 #'   side of the plot.
+#' @param colFit Colour for the fitted curve. Defaults to \code{"red"} for
+#'   automatic fits and \code{"orange"} for manual fits.
+#' @param colResid Colour for residual curves and the residual axis when
+#'   \code{residuals = TRUE} or \code{residuals = "overlay"}. Defaults to
+#'   \code{"darkgreen"}.
+#' @param manualXRange Optional numeric vector of length 2 giving the
+#'   multiplicity range to use when plotting a manual fit. If \code{NULL},
+#'   manual fits default to \code{c(5, fit@xrange[2])}, clamped to a valid
+#'   range. Automatic fits ignore this argument and use their stored
+#'   \code{xrange}. This affects only plotting and residual diagnostics;
+#'   it does not modify the stored fit.
 #' @param ... other keyword arguments to be passed to \code{plot()};
 #'   any \code{xlim} or \code{ylim} supplied here takes precedence over
 #'   the defaults derived from the plotted fit
@@ -756,7 +936,8 @@ residuals.spectrum <- function(object, fitIndex = 1, xrange = NULL, ...){
 #' plot(E030, log="xy")
 #' plot(E030, xlim=c(0,200), ylim=c(0,10000000))
 #' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
-#'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+#'                      log10theta = c(-4, -1), log10Mbp = c(0, 3),
+#'                      xrange = c(45, 200))
 #' spec <- addFit(E030, fit)
 #' plot(spec)                        # overlays the first (only) fit
 #' plot(spec, fitIndex = NA)         # spectrum only, no fit overlay
@@ -768,6 +949,9 @@ plot.spectrum <- function(x,
                           ylab,
                           fitIndex = NULL,
                           residuals = FALSE,
+                          colFit = NULL,
+                          colResid = "darkgreen",
+                          manualXRange = NULL,
                           ...){
   residualsMode <- if(isTRUE(residuals)){
     "only"
@@ -798,6 +982,22 @@ plot.spectrum <- function(x,
   }
 
   extraArgs <- list(...)
+  legendCol <- function(col){
+    if(is.numeric(col) && length(col) > 0 && is.finite(col[1]) && col[1] >= 1){
+      grDevices::palette()[col[1]]
+    } else {
+      col[1]
+    }
+  }
+  normalisePlotXRange <- function(xrange){
+    xrange <- normaliseExpectedSpectrumXrange(xrange)
+    multRange <- range(x@data$mult, na.rm = TRUE)
+    if(xrange[1] < multRange[1] || xrange[2] > multRange[2]){
+      stop("plot.spectrum: `manualXRange` must fall within the spectrum's multiplicity range.",
+           call. = FALSE)
+    }
+    xrange
+  }
 
   if(residualsMode == "overlay"){
     # The secondary residual axis on the right needs more room than R's
@@ -809,12 +1009,20 @@ plot.spectrum <- function(x,
 
   fitInput <- NULL
   params   <- NULL
+  fitY     <- NULL
+  fitCol   <- NULL
   resid    <- NULL
+  plotXRange <- NULL
   xmin <- xmax <- NULL
 
   if(!is.null(fit)){
     message("plot.spectrum: showing fit index ", fitIndex,
             " (model ", fit@model, ")")
+    fitCol <- if(is.null(colFit)){
+      if(identical(fit@fitType, "manual")) "orange" else "red"
+    } else {
+      colFit
+    }
 
     currentVersion <- as.character(utils::packageVersion("Tetmer"))
     if(!identical(fit@version, currentVersion)){
@@ -826,18 +1034,45 @@ plot.spectrum <- function(x,
       )
     }
 
-    xmin <- fit@xrange[1]
-    xmax <- fit@xrange[2]
+    plotXRange <- fit@xrange
+    if(identical(fit@fitType, "manual")){
+      if(is.null(manualXRange)){
+        manualLower <- min(5, fit@xrange[2])
+        plotXRange <- c(manualLower, fit@xrange[2])
+      } else {
+        plotXRange <- normalisePlotXRange(manualXRange)
+      }
+    }
+    xmin <- plotXRange[1]
+    xmax <- plotXRange[2]
 
     fitInput <- list(mod = fit@model)
     params   <- getModelParameters(fitInput, optimised = list(par = fit@par))
-    resid    <- residuals.spectrum(x, fitIndex = fitIndex, xrange = fit@xrange)
+    probs    <- getProbs(fitInput)
+    factors  <- getFactors(fitInput)
+    fitY     <- evalModel(probs, factors,
+                          xmin = xmin, xmax = xmax,
+                          kcov = params$cov, vf = params$vf,
+                          theta = params$theta, gs = params$gs,
+                          diverg = params$diverg, pallo = params$pallo)
+    resid    <- residuals.spectrum(x, fitIndex = fitIndex, xrange = plotXRange)
 
     if(residualsMode != "only"){
-      if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
+      if(is.null(extraArgs$xlim)){
+        extraArgs$xlim <- if(identical(fit@fitType, "manual")){
+          c(xmin, xmax * 1.1)
+        } else {
+          c(0, xmax * 1.1)
+        }
+      }
 
       dataMax <- max(x@data$count[xmin:xmax], na.rm = TRUE)
       dataMin <- min(x@data$count[xmin:xmax], na.rm = TRUE)
+      finiteFit <- fitY[is.finite(fitY)]
+      fitMax <- if(length(finiteFit) > 0) max(finiteFit) else NA_real_
+      useManualFitMax <- identical(fit@fitType, "manual") &&
+        is.finite(fitMax) && fitMax > 0
+      manualFitYMax <- if(useManualFitMax) 1.1 * fitMax else NA_real_
 
       if(residualsMode == "overlay"){
         if(!is.null(extraArgs$log) && grepl("y", extraArgs$log, fixed = TRUE)){
@@ -854,13 +1089,14 @@ plot.spectrum <- function(x,
         residMin  <- min(resid, 0, na.rm = TRUE)  # always <= 0
         residMax  <- max(resid, 0, na.rm = TRUE)  # always >= 0
         residSpan <- max(residMax, -residMin)
-        residScale <- if(residSpan > 0) (0.4 * dataMax) / residSpan else 1
+        countMax <- dataMax
+        residScale <- if(residSpan > 0) (0.4 * countMax) / residSpan else 1
 
         if(is.null(extraArgs$ylim)){
           # Tight fit: panel floor is exactly low enough for the scaled
           # negative residual tail (or 0, if residuals are all >= 0); panel
-          # ceiling is the data/fit curve's own max, unchanged from before.
-          extraArgs$ylim <- c(min(0, residMin * residScale), dataMax)
+          # ceiling is the data/fit curve's own max.
+          extraArgs$ylim <- c(min(0, residMin * residScale), countMax)
         } else {
           # User supplied their own ylim -- keep it, but still need a scale
           # factor that keeps the residual within whichever side of zero
@@ -876,22 +1112,43 @@ plot.spectrum <- function(x,
           # which is incompatible with a log y-axis; choose the smallest
           # positive count in the plotted range instead.
           positiveCounts <- x@data$count[xmin:xmax]
-          positiveCounts <- positiveCounts[is.finite(positiveCounts) & positiveCounts > 0]
-          dataMin <- if(length(positiveCounts) > 0) min(positiveCounts) else 1
+          positiveFit <- fitY
+          positiveCounts <- positiveCounts[is.finite(positiveCounts) &
+                                             positiveCounts > 0]
+          positiveValues <- positiveCounts
+          if(identical(fit@fitType, "manual")){
+            positiveFit <- positiveFit[is.finite(positiveFit) & positiveFit > 0]
+            positiveValues <- c(positiveCounts, positiveFit)
+          }
+          dataMin <- if(length(positiveValues) > 0) min(positiveValues) else 1
+        } else if(useManualFitMax){
+          dataMin <- 0
         }
-        extraArgs$ylim <- c(dataMin, dataMax)
+        if(useManualFitMax){
+          extraArgs$ylim <- c(dataMin, manualFitYMax)
+        } else {
+          extraArgs$ylim <- c(dataMin, dataMax)
+        }
       }
     }
   }
 
   if(residualsMode == "only"){
-    if(is.null(extraArgs$xlim)) extraArgs$xlim <- c(0, xmax * 1.1)
+    if(is.null(extraArgs$xlim)){
+      extraArgs$xlim <- if(!is.null(fit) && identical(fit@fitType, "manual")){
+        c(xmin, xmax * 1.1)
+      } else {
+        c(0, xmax * 1.1)
+      }
+    }
+    extraArgs$col <- NULL
     plotArgs <- c(list(x = xmin:xmax, y = resid, type = "l",
-                        main = main, xlab = xlab, ylab = ylab),
+                        main = main, xlab = xlab, ylab = ylab,
+                        col = colResid),
                   extraArgs)
     do.call(plot, plotArgs)
     abline(h = 0, lty = 3, col = "grey40")
-    abline(v = fit@xrange, col = 4, lty = 2, lwd = 2)
+    abline(v = plotXRange, col = 4, lty = 2, lwd = 2)
 
     ypos <- grconvertY(0.9, from = "nfc", to = "user")
     drawPeakMarkers(cov = params$cov,
@@ -922,19 +1179,12 @@ plot.spectrum <- function(x,
 
   if(!is.null(fit)){
     # Match app behavior by showing the fitted x-range boundaries.
-    abline(v = fit@xrange, col = 4, lty = 2, lwd = 2)
-
-    probs   <- getProbs(fitInput)
-    factors <- getFactors(fitInput)
+    abline(v = plotXRange, col = 4, lty = 2, lwd = 2)
 
     points(
       xmin:xmax,
-      evalModel(probs, factors,
-                xmin = xmin, xmax = xmax,
-                kcov = params$cov, vf = params$vf,
-                theta = params$theta, gs = params$gs,
-                diverg = params$diverg, pallo = params$pallo),
-      col = "red", type = 'l', lty = 1, lwd = 2
+      fitY,
+      col = fitCol, type = 'l', lty = 1, lwd = 2
     )
 
     # Match the app by showing expected peak multiplicities for the fitted model.
@@ -946,7 +1196,8 @@ plot.spectrum <- function(x,
                     cex = 1.2)
 
     legendLabels <- c("Data", "Fit")
-    legendCols   <- c(1, 2)
+    dataCol <- if(!is.null(extraArgs$col)) extraArgs$col else "black"
+    legendCols   <- c(legendCol(dataCol), legendCol(fitCol))
     legendLwd    <- c(1, 2)
     legendLty    <- c(0, 1)
     legendPch    <- c(1, NA)
@@ -958,7 +1209,7 @@ plot.spectrum <- function(x,
       # count = 0 -- both are shown by the single abline(h = 0) already
       # drawn above, rather than each axis having its own independent
       # notion of where zero sits.
-      points(xmin:xmax, resid * residScale, col = "darkgreen", type = "l", lty = 1, lwd = 2)
+      points(xmin:xmax, resid * residScale, col = colResid, type = "l", lty = 1, lwd = 2)
       # Use the SAME panel y-positions the left axis already chose (so both
       # axes have matching tick counts and aligned rows), just relabelled
       # in residual units by inverting the scale.
@@ -966,11 +1217,11 @@ plot.spectrum <- function(x,
       usr <- graphics::par("usr")
       leftTicks <- leftTicks[leftTicks >= usr[3] & leftTicks <= usr[4]]
       axis(4, at = leftTicks, labels = signif(leftTicks / residScale, 2),
-          col.axis = "black", col = "darkgreen")
-      mtext("Residual (observed - expected)", side = 4, line = 3, col = "darkgreen")
+          col.axis = "black", col = colResid)
+      mtext("Residual (data - fit)", side = 4, line = 3, col = colResid)
 
       legendLabels <- c(legendLabels, "Residual")
-      legendCols   <- c(legendCols, "darkgreen")
+      legendCols   <- c(legendCols, legendCol(colResid))
       legendLwd    <- c(legendLwd, 2)
       legendLty    <- c(legendLty, 1)
       legendPch    <- c(legendPch, NA)
@@ -1008,7 +1259,8 @@ plot.spectrum <- function(x,
 #' @examples
 #' \dontrun{
 #' fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
-#'                      theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+#'                      log10theta = c(-4, -1), log10Mbp = c(0, 3),
+#'                      xrange = c(45, 200))
 #' spec <- addFit(E030, fit)
 #' diagPlot(spec)
 #' }
@@ -1021,10 +1273,13 @@ diagPlot <- function(x, fitIndex = 1, ...){
 #' Write a k-mer spectrum to a text file
 #'
 #' Writes a \code{spectrum} object to a plain text file in a human-readable
-#' format. The file uses \code{#} comment lines to store metadata (name, k,
-#' and any stored fits) followed by two columns: multiplicity and count.
+#' format. The file uses \code{#TETMER}-prefixed comment lines to store
+#' metadata (name, k, and any stored fits) followed by two columns:
+#' multiplicity and count.
 #' The format is compatible with \code{read.spectrum} and can be inspected
-#' with any text editor or scrolled through using \code{less}.
+#' with any text editor or scrolled through using \code{less}. See the
+#' spectrum and fit classes vignette for the \code{#TETMER format: 1}
+#' specification.
 #'
 #' @param x A \code{spectrum} object
 #' @param file A string giving the path to the output file, or a connection
@@ -1043,30 +1298,32 @@ write.spectrum <- function(x, file, ...){
   on.exit(close(con))
 
   # -- Metadata header --
-  writeLines(paste0("# Tetmer spectrum file -- written by Tetmer v",
+  writeLines("#TETMER format: 1", con)
+  writeLines(paste0("#TETMER tetmer.version: ",
                     packageVersion("Tetmer")), con)
-  writeLines(paste0("# name: ", x@name), con)
-  writeLines(paste0("# k: ",    x@k),    con)
+  writeLines(paste0("#TETMER name: ", x@name), con)
+  writeLines(paste0("#TETMER k: ",    x@k),    con)
 
   # -- Stored fits --
   nFits <- length(x@fits)
-  writeLines(paste0("# fits: ", nFits), con)
+  writeLines(paste0("#TETMER fits: ", nFits), con)
   if(nFits > 0){
     for(i in seq_len(nFits)){
       fit <- x@fits[[i]]
-      writeLines(paste0("# fit.", i, ".model: ",       fit@model),       con)
-      writeLines(paste0("# fit.", i, ".k: ",           fit@k),           con)
-      writeLines(paste0("# fit.", i, ".version: ",     fit@version),     con)
-      writeLines(paste0("# fit.", i, ".convergence: ", fit@convergence), con)
-      writeLines(paste0("# fit.", i, ".value: ",       fit@value),       con)
-      writeLines(paste0("# fit.", i, ".xrange: ",
+      writeLines(paste0("#TETMER fit.", i, ".fitType: ",     fit@fitType),     con)
+      writeLines(paste0("#TETMER fit.", i, ".model: ",       fit@model),       con)
+      writeLines(paste0("#TETMER fit.", i, ".k: ",           fit@k),           con)
+      writeLines(paste0("#TETMER fit.", i, ".version: ",     fit@version),     con)
+      writeLines(paste0("#TETMER fit.", i, ".convergence: ", fit@convergence), con)
+      writeLines(paste0("#TETMER fit.", i, ".value: ",       fit@value),       con)
+      writeLines(paste0("#TETMER fit.", i, ".xrange: ",
                         paste(fit@xrange, collapse = " ")),               con)
       for(nm in names(fit@par)){
-        writeLines(paste0("# fit.", i, ".par.", nm, ": ", fit@par[nm]), con)
+        writeLines(paste0("#TETMER fit.", i, ".par.", nm, ": ", fit@par[nm]), con)
       }
       for(nm in names(fit@ranges)){
         vals <- fit@ranges[[nm]]
-        writeLines(paste0("# fit.", i, ".range.", nm, ": ",
+        writeLines(paste0("#TETMER fit.", i, ".range.", nm, ": ",
                           paste(vals, collapse = " ")), con)
       }
     }
@@ -1168,21 +1425,22 @@ getModelCode <- function(x){
 #' @param model Model code
 #' @param kcov Numeric vector of length 2 for coverage bounds
 #' @param vf Numeric vector of length 2 for variance factor bounds
-#' @param theta Numeric vector of length 2 for log10 theta bounds
-#' @param gs Numeric vector of length 2 for log10 haploid genome size bounds
+#' @param log10theta Numeric vector of length 2 for log10 theta bounds
+#' @param log10Mbp Numeric vector of length 2 for log10 haploid genome
+#'   size bounds in Mbp
 #' @param xrange Numeric vector of length 2 for fitting x-range
 #' @param diverg Numeric vector of length 2 for divergence bounds
 #' @param pallo Numeric vector of length 2 for p-allo bounds
 #'
 #' @return A named list representing autofit configuration
 #' @keywords internal
-makeAutoFitConfig <- function(model, kcov, vf, theta, gs, xrange,
+makeAutoFitConfig <- function(model, kcov, vf, log10theta, log10Mbp, xrange,
                               diverg = c(0.1, 100), pallo = c(0.01, 0.99)){
   ranges <- list(
     kcov = kcov,
     vf = vf,
-    theta = theta,
-    gs = gs
+    log10theta = log10theta,
+    log10Mbp = log10Mbp
   )
   if(modelUsesDivergence(model)) ranges$diverg <- diverg
   if(modelUsesPallo(model)) ranges$pallo <- pallo
@@ -1210,8 +1468,8 @@ asAutoFitConfig <- function(x){
       model = x$mod,
       kcov = x$akcov,
       vf = x$avf,
-      theta = x$ath,
-      gs = x$ayadj,
+      log10theta = x$ath,
+      log10Mbp = x$ayadj,
       xrange = x$axrange,
       diverg = x$adiv,
       pallo = x$apallo
@@ -1274,8 +1532,8 @@ buildOptimisationSpec <- function(input){
   rangeInputs <- list(
     cov = fitConfig$ranges$kcov,
     vf = fitConfig$ranges$vf,
-    theta = 10^fitConfig$ranges$theta,
-    haplSize = 10^(fitConfig$ranges$gs - 6)
+    theta = 10^fitConfig$ranges$log10theta,
+    haplSize = 10^fitConfig$ranges$log10Mbp
   )
   if(modelUsesDivergence(fitConfig$model)) rangeInputs$diverg <- fitConfig$ranges$diverg
   if(modelUsesPallo(fitConfig$model)) rangeInputs$pallo <- fitConfig$ranges$pallo
@@ -1529,7 +1787,7 @@ textOut <- function(input, optimised, spec){
       "\n\nSTARTING RANGES (MIN MAX)",
       "\n  monoploid k-mer cov: ", input$akcov[1], " ", input$akcov[2],
       "\nlog10 theta per k-mer: ", input$ath[1], " ", input$ath[2],
-      "\n     non-rep GS (Mbp): ", input$ayadj[1], " ", input$ayadj[2],
+      "\nlog10 non-rep GS (Mbp): ", input$ayadj[1], " ", input$ayadj[2],
       "\n variance factor (vf): ", input$avf[1], " ", input$avf[2],
       "\n              x range: ", input$axrange[1], " ", input$axrange[2]
     )
@@ -1653,7 +1911,7 @@ textOutHtml <- function(input, optimised, spec){
     "\n\nSTARTING RANGES (MIN MAX)",
     "\n  monoploid k-mer cov: ", escapeHtml(as.character(input$akcov[1])), " ", escapeHtml(as.character(input$akcov[2])),
     "\nlog10 theta per k-mer: ", escapeHtml(as.character(input$ath[1])), " ", escapeHtml(as.character(input$ath[2])),
-    "\n     non-rep GS (Mbp): ", escapeHtml(as.character(input$ayadj[1])), " ", escapeHtml(as.character(input$ayadj[2])),
+    "\nlog10 non-rep GS (Mbp): ", escapeHtml(as.character(input$ayadj[1])), " ", escapeHtml(as.character(input$ayadj[2])),
     "\n variance factor (vf): ", escapeHtml(as.character(input$avf[1])), " ", escapeHtml(as.character(input$avf[2])),
     "\n              x range: ", escapeHtml(as.character(input$axrange[1])), " ", escapeHtml(as.character(input$axrange[2]))
   )
@@ -2007,7 +2265,8 @@ allowSegTet <- function(){
 #' @examples
 #' \dontrun{
 #' fit <- fitSpectrum(E030, model = "d", kcov = c(5, 100), vf = c(1, 30),
-#'                    theta = c(-3, 0), gs = c(6, 9), xrange = c(45, 200),
+#'                    log10theta = c(-3, 0), log10Mbp = c(0, 3),
+#'                    xrange = c(45, 200),
 #'                    maxAttempts = 1)
 #' expectedSpectrum(fit)
 #' expectedSpectrum("d",

@@ -27,7 +27,10 @@ multiplicity values. If \code{TRUE}, this step is skipped.}
 A \code{spectrum} object
 }
 \description{
-Uses \code{read.table()} to read in a k-mer spectrum.
+Uses \code{read.table()} to read in a k-mer spectrum. For files written by
+\code{write.spectrum()}, \code{#TETMER}-prefixed metadata lines are used to
+restore the spectrum name, k-mer length, and any stored \code{tetmerFit}
+objects.
 }
 \examples{
 \dontrun{testdf <- data.frame(mult=1:100, count = 100:1)}

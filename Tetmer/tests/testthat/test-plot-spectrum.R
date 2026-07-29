@@ -12,7 +12,9 @@ makeTestSpectrum <- function() {
   )
 }
 
-makeTestFit <- function(model, version = as.character(utils::packageVersion("Tetmer"))) {
+makeTestFit <- function(model,
+                        version = as.character(utils::packageVersion("Tetmer")),
+                        fitType = "auto") {
   par <- c(cov = 30, vf = 1.5, theta = 0.04, haplSize = 200)
   if (model %in% c("traab", "tal", "tse")) {
     par <- c(par, diverg = 30)
@@ -22,10 +24,11 @@ makeTestFit <- function(model, version = as.character(utils::packageVersion("Tet
   }
 
   methods::new("tetmerFit",
+    fitType = fitType,
     model = model,
     par = par,
     ranges = list(),
-    xrange = c(10, 80),
+    xrange = if (identical(fitType, "manual")) c(1, 80) else c(10, 80),
     convergence = 0,
     value = 1,
     k = 21,
@@ -88,4 +91,169 @@ test_that("plot.spectrum fitIndex = NA suppresses fit overlay and version warnin
 
   expect_no_message(withPngDevice(plot(spec, fitIndex = NA)))
   expect_no_warning(withPngDevice(plot(spec, fitIndex = NA)))
+})
+
+test_that("plot.spectrum uses fitted y maximum for manual fits", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d", fitType = "manual")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  expectedYMax <- 1.1 * max(expectedSpectrum(fit, xrange = c(5, 80))@data$count)
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, xaxs = "i", yaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[1], 5)
+  expect_equal(usr[3], 0)
+  expect_equal(usr[4], expectedYMax, tolerance = 1e-6)
+})
+
+test_that("plot.spectrum keeps data y maximum for automatic fits", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, yaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[4], max(spec@data$count[fit@xrange[1]:fit@xrange[2]]))
+})
+
+test_that("plot.spectrum respects explicit ylim for manual fits", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d", fitType = "manual")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, ylim = c(0, 123), yaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[3:4], c(0, 123))
+})
+
+test_that("plot.spectrum overlay uses diagnostic x-range for manual fits", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d", fitType = "manual")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  diagnosticRange <- c(5, fit@xrange[2])
+  expectedYMax <- max(spec@data$count[diagnosticRange[1]:diagnosticRange[2]])
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, residuals = "overlay", xaxs = "i", yaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[1], diagnosticRange[1])
+  expect_equal(usr[4], expectedYMax, tolerance = 1e-6)
+  expect_lt(usr[4], spec@data$count[fit@xrange[1]])
+})
+
+test_that("plot.spectrum manualXRange overrides manual diagnostic range", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d", fitType = "manual")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  manualXRange <- c(20, 70)
+  expectedYMax <- max(spec@data$count[manualXRange[1]:manualXRange[2]])
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, residuals = "overlay",
+           manualXRange = manualXRange, xaxs = "i", yaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[1:2], c(manualXRange[1], manualXRange[2] * 1.1))
+  expect_equal(usr[4], expectedYMax, tolerance = 1e-6)
+})
+
+test_that("plot.spectrum manualXRange applies to residual-only manual plots", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d", fitType = "manual")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  manualXRange <- c(20, 70)
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, residuals = TRUE,
+           manualXRange = manualXRange, xaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[1:2], c(manualXRange[1], manualXRange[2] * 1.1))
+})
+
+test_that("plot.spectrum ignores manualXRange for automatic fits", {
+  spec <- makeTestSpectrum()
+  fit <- makeTestFit("d")
+  spec@data$count[fit@xrange[1]] <- 1e8
+  spec <- addFit(spec, fit)
+
+  usr <- NULL
+  expect_message(
+    usr <- withPngDevice({
+      plot(spec, fitIndex = 1, residuals = "overlay",
+           manualXRange = c(20, 70), xaxs = "i", yaxs = "i")
+      graphics::par("usr")
+    }),
+    "showing fit index 1"
+  )
+
+  expect_equal(usr[1:2], c(0, fit@xrange[2] * 1.1))
+  expect_equal(usr[4], max(spec@data$count[fit@xrange[1]:fit@xrange[2]]))
+})
+
+test_that("plot.spectrum accepts fit and residual colour parameters", {
+  spec <- makeTestSpectrum()
+  spec <- addFit(spec, makeTestFit("d", fitType = "manual"))
+
+  expect_message(
+    expect_no_error(withPngDevice(
+      plot(spec, fitIndex = 1, residuals = "overlay",
+           col = "grey30", colFit = 2, colResid = 3)
+    )),
+    "showing fit index 1"
+  )
+  expect_message(
+    expect_no_error(withPngDevice(
+      plot(spec, fitIndex = 1, residuals = TRUE,
+           col = "grey30", colResid = "blue")
+    )),
+    "showing fit index 1"
+  )
 })

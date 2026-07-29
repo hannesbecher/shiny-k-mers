@@ -10,6 +10,7 @@ makeExpectedSpectrumTestFit <- function(model = "d") {
   }
 
   methods::new("tetmerFit",
+    fitType = "auto",
     model = model,
     par = par,
     ranges = list(),

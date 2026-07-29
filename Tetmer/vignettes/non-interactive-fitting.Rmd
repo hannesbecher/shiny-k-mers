@@ -39,18 +39,19 @@ fit_d <- fitSpectrum(E030,
                       model  = "d",
                       kcov   = c(30, 60),
                       vf     = c(1, 10),
-                      theta  = c(-2, 0.6),
-                      gs     = c(6, 9),
+                      log10theta = c(-2, 0.6),
+                      log10Mbp   = c(0, 3),
                       xrange = c(45, 150))
 fit_d
 ```
 
 The arguments mirror the sliders in the interactive app's Autofit
-panels: `kcov`, `vf`, `theta`, and `gs` each take a two-element vector
-giving the lower and upper bound to search within, and `xrange` gives
-the multiplicity range of the data to fit over -- which should exclude
-any contamination peak at low multiplicity, just as in the interactive
-app.
+panels: `kcov`, `vf`, `log10theta`, and `log10Mbp` each take a
+two-element vector giving the lower and upper bound to search within.
+`log10theta` is log10 theta per k-mer, and `log10Mbp` is the log10 of
+the monoploid non-repetitive genome size in Mbp. `xrange` gives the
+multiplicity range of the data to fit over -- which should exclude any
+contamination peak at low multiplicity, just as in the interactive app.
 
 To visualise the fitted curve with `plot.spectrum()`, attach the fit to
 the original spectrum and then plot that spectrum:
@@ -72,8 +73,8 @@ fit_tal <- fitSpectrum(E028,
                         model  = "tal",
                         kcov   = c(37, 45),
                         vf     = c(1, 10),
-                        theta  = c(-2, 0.6),
-                        gs     = c(6, 9),
+                        log10theta = c(-2, 0.6),
+                        log10Mbp   = c(0, 3),
                         xrange = c(25, 200),
                         diverg = c(0.1, 100))
 fit_tal
@@ -115,8 +116,8 @@ failed_fit <- fitSpectrum(E030,
                            model  = "d",
                            kcov   = c(50, 200),
                            vf     = c(1, 10),
-                           theta  = c(-2, 0.6),
-                           gs     = c(6, 9),
+                           log10theta = c(-2, 0.6),
+                           log10Mbp   = c(0, 3),
                            xrange = c(45, 5000),
                            maxAttempts = 2)
 is.null(failed_fit)
@@ -143,8 +144,8 @@ fits <- lapply(files, function(f) {
               model  = "d",
               kcov   = c(5, 200),
               vf     = c(1, 10),
-              theta  = c(-2, 0.6),
-              gs     = c(6, 9),
+              log10theta = c(-2, 0.6),
+              log10Mbp   = c(0, 3),
               xrange = c(45, 250))
 })
 names(fits) <- tools::file_path_sans_ext(basename(files))

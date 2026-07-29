@@ -35,7 +35,8 @@ of the generic \code{stats::residuals}, and is used internally by
 \examples{
 \dontrun{
 fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
-                     theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+                     log10theta = c(-4, -1), log10Mbp = c(0, 3),
+                     xrange = c(45, 200))
 spec <- addFit(E030, fit)
 residuals(spec)
 residuals(spec, xrange = c(45, 300))

@@ -18,10 +18,13 @@ write.spectrum(x, file, ...)
 }
 \description{
 Writes a \code{spectrum} object to a plain text file in a human-readable
-format. The file uses \code{#} comment lines to store metadata (name, k,
-and any stored fits) followed by two columns: multiplicity and count.
+format. The file uses \code{#TETMER}-prefixed comment lines to store
+metadata (name, k, and any stored fits) followed by two columns:
+multiplicity and count.
 The format is compatible with \code{read.spectrum} and can be inspected
-with any text editor or scrolled through using \code{less}.
+with any text editor or scrolled through using \code{less}. See the
+spectrum and fit classes vignette for the \code{#TETMER format: 1}
+specification.
 }
 \examples{
 \dontrun{

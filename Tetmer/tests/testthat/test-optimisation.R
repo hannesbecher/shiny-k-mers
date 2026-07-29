@@ -39,7 +39,7 @@ test_that("doOptimisation on E030 (diploid) returns non-NULL result", {
     mod       = "d",
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
-    gsRange   = c(6, 9),
+    gsRange   = c(0, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
@@ -57,7 +57,7 @@ test_that("doOptimisation on E030 (diploid) has named parameters", {
     mod       = "d",
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
-    gsRange   = c(6, 9),
+    gsRange   = c(0, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
@@ -75,7 +75,7 @@ test_that("doOptimisation on E030 (diploid) estimates genome size within publish
     mod       = "d",
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
-    gsRange   = c(6, 9),
+    gsRange   = c(0, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
@@ -97,7 +97,7 @@ test_that("doOptimisation on E030 (diploid) returns finite objective value", {
     mod       = "d",
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
-    gsRange   = c(6, 9),
+    gsRange   = c(0, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
@@ -115,7 +115,7 @@ test_that("doOptimisation on E030 (diploid) all parameters are positive", {
     mod       = "d",
     kcovRange = c(5, 100),
     thRange   = c(-3, 0),
-    gsRange   = c(6, 9),
+    gsRange   = c(0, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200)
   )
@@ -143,7 +143,7 @@ test_that("doOptimisation on E028 (allotetraploid) returns non-NULL result", {
     mod       = "tal",
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
-    gsRange   = c(7, 9),
+    gsRange   = c(1, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
@@ -162,7 +162,7 @@ test_that("doOptimisation on E028 (allotetraploid) has named parameters", {
     mod       = "tal",
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
-    gsRange   = c(7, 9),
+    gsRange   = c(1, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
@@ -181,7 +181,7 @@ test_that("doOptimisation on E028 (allotetraploid) returns finite objective valu
     mod       = "tal",
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
-    gsRange   = c(7, 9),
+    gsRange   = c(1, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)
@@ -200,7 +200,7 @@ test_that("doOptimisation on E028 (allotetraploid) all parameters are positive",
     mod       = "tal",
     kcovRange = c(5, 30),
     thRange   = c(-3, -0.5),
-    gsRange   = c(7, 9),
+    gsRange   = c(1, 3),
     vfRange   = c(1, 30),
     xrange    = c(45, 200),
     divRange  = c(1, 100)

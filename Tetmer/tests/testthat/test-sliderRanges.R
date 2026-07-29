@@ -34,7 +34,7 @@ test_that("setSliderRanges applies partial overrides and preserves defaults", {
 
   expect_equal(ranges$kcovMax, 500)
   expect_equal(ranges$ymax, 3)
-  expect_equal(ranges$gsMin, 3)
+  expect_equal(ranges$gsMin, -3)
   expect_equal(ranges$palloMax, 1)
 })
 

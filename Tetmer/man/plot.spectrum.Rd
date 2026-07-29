@@ -4,7 +4,18 @@
 \alias{plot.spectrum}
 \title{Plot a k-mer spectrum}
 \usage{
-\method{plot}{spectrum}(x, main, xlab, ylab, fitIndex = NULL, residuals = FALSE, ...)
+\method{plot}{spectrum}(
+  x,
+  main,
+  xlab,
+  ylab,
+  fitIndex = NULL,
+  residuals = FALSE,
+  colFit = NULL,
+  colResid = "darkgreen",
+  manualXRange = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class \code{spectrum}}
@@ -41,6 +52,20 @@ them in. \code{"overlay"} plots the data and fit as usual, with the
 residual additionally drawn on a secondary y-axis on the right-hand
 side of the plot.}
 
+\item{colFit}{Colour for the fitted curve. Defaults to \code{"red"} for
+automatic fits and \code{"orange"} for manual fits.}
+
+\item{colResid}{Colour for residual curves and the residual axis when
+\code{residuals = TRUE} or \code{residuals = "overlay"}. Defaults to
+\code{"darkgreen"}.}
+
+\item{manualXRange}{Optional numeric vector of length 2 giving the
+multiplicity range to use when plotting a manual fit. If \code{NULL},
+manual fits default to \code{c(5, fit@xrange[2])}, clamped to a valid
+range. Automatic fits ignore this argument and use their stored
+\code{xrange}. This affects only plotting and residual diagnostics;
+it does not modify the stored fit.}
+
 \item{...}{other keyword arguments to be passed to \code{plot()};
 any \code{xlim} or \code{ylim} supplied here takes precedence over
 the defaults derived from the plotted fit}
@@ -61,7 +86,8 @@ using \code{xlim} or \code{ylim}.
 plot(E030, log="xy")
 plot(E030, xlim=c(0,200), ylim=c(0,10000000))
 fit  <- fitSpectrum(E030, model = "d", kcov = c(40, 80), vf = c(1, 10),
-                     theta = c(-4, -1), gs = c(6, 9), xrange = c(45, 200))
+                     log10theta = c(-4, -1), log10Mbp = c(0, 3),
+                     xrange = c(45, 200))
 spec <- addFit(E030, fit)
 plot(spec)                        # overlays the first (only) fit
 plot(spec, fitIndex = NA)         # spectrum only, no fit overlay

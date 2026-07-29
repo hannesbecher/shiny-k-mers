@@ -8,8 +8,8 @@ makeAutoFitConfig(
   model,
   kcov,
   vf,
-  theta,
-  gs,
+  log10theta,
+  log10Mbp,
   xrange,
   diverg = c(0.1, 100),
   pallo = c(0.01, 0.99)
@@ -22,9 +22,10 @@ makeAutoFitConfig(
 
 \item{vf}{Numeric vector of length 2 for variance factor bounds}
 
-\item{theta}{Numeric vector of length 2 for log10 theta bounds}
+\item{log10theta}{Numeric vector of length 2 for log10 theta bounds}
 
-\item{gs}{Numeric vector of length 2 for log10 haploid genome size bounds}
+\item{log10Mbp}{Numeric vector of length 2 for log10 haploid genome
+size bounds in Mbp}
 
 \item{xrange}{Numeric vector of length 2 for fitting x-range}
 

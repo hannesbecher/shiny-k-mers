@@ -51,7 +51,8 @@ k-mer counts under one of Tetmer's models.
 \examples{
 \dontrun{
 fit <- fitSpectrum(E030, model = "d", kcov = c(5, 100), vf = c(1, 30),
-                   theta = c(-3, 0), gs = c(6, 9), xrange = c(45, 200),
+                   log10theta = c(-3, 0), log10Mbp = c(0, 3),
+                   xrange = c(45, 200),
                    maxAttempts = 1)
 expectedSpectrum(fit)
 expectedSpectrum("d",

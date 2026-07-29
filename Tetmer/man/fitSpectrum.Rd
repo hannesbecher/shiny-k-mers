@@ -9,8 +9,8 @@ fitSpectrum(
   model,
   kcov,
   vf,
-  theta,
-  gs,
+  log10theta,
+  log10Mbp,
   xrange,
   diverg = c(0.1, 100),
   pallo = c(0.01, 0.99),
@@ -31,11 +31,11 @@ monoploid k-mer coverage}
 \item{vf}{Numeric vector of length 2: lower and upper bounds for
 variance factor (vf), where variance equals vf times the mean}
 
-\item{theta}{Numeric vector of length 2: lower and upper bounds for
-log10 of theta per k-mer}
+\item{log10theta}{Numeric vector of length 2: lower and upper bounds
+for log10 of theta per k-mer}
 
-\item{gs}{Numeric vector of length 2: lower and upper bounds for
-log10 of haploid genome size in Mbp (e.g. \code{c(6, 9)})}
+\item{log10Mbp}{Numeric vector of length 2: lower and upper bounds for
+log10 of haploid genome size in Mbp (e.g. \code{c(0, 3)})}
 
 \item{xrange}{Numeric vector of length 2: lower and upper multiplicity
 bounds of the spectrum to use for fitting}
@@ -66,8 +66,8 @@ fit <- fitSpectrum(E030,
                   model  = "d",
                   kcov   = c(5, 100),
                   vf     = c(1, 100),
-                  theta  = c(-3, 0),
-                  gs     = c(6, 9),
+                  log10theta = c(-3, 0),
+                  log10Mbp   = c(0, 3),
                   xrange = c(45, 200))
 fit
 spec <- addFit(E030, fit)

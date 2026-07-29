@@ -47,7 +47,7 @@ The bias parameter corresponds to the relative width of the peaks. It is the sam
 
 Theta corresponds to the genome-wide heterozygosity (between both genomes in diploids, between all four genomes in autotetraploids, or between homologous genomes in allotetraploids). The slider has a log10 scale, which means that the default range of -2 to 0.6 corresponds to 0.01 to 4 in linear space. This is per k-mer. To get the value per nucleotide, you need to divide this by the k-mer length of your data.
 
-The haploid, non-repetitive genome size corresponds to the number of unique k-mers in a haploid genome.
+The haploid, non-repetitive genome size corresponds to the number of unique k-mers in a haploid genome. In Autofit mode the genome-size range is given as log10(Mbp).
 
 When fitting data to an allopolyploid spectrum, one additional parameter is required, the divergence time between the sub-genomes, which can be adjusted on panel 4.
 
@@ -77,5 +77,4 @@ When using Tetmer for a publication, please cite:
 **Mapleson, D., Garcia Accinelli, G., Kettleborough, G., Wright, J., and Clavijo, B. J. (2016).** KAT: a K-mer analysis toolkit to quality control NGS datasets and genome assemblies. *Bioinformatics* **33**:574–576.
 
 **Vurture, G. W., Sedlazeck, F. J., Nattestad, M., Underwood, C. J., Fang, H., Gurtowski, J., and Schatz, M. C. (2017).** GenomeScope: fast reference-free genome profiling from short reads. *Bioinformatics* **33**:2202–2204.
-
 

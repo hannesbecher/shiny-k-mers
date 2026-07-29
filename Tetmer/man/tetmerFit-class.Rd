@@ -5,14 +5,17 @@
 \alias{tetmerFit-class}
 \title{A stored Tetmer fit result}
 \description{
-Stores the result of a single Tetmer model fit, including the model type,
-fitted parameters, parameter ranges used in optimisation, the x range
-of the spectrum used for fitting, convergence information, and the
-version of Tetmer used.
+Stores the result of a single Tetmer model fit, including the fit type,
+model type, fitted parameters, parameter ranges used in optimisation, the
+x range of the spectrum used for fitting, convergence information, and
+the version of Tetmer used.
 }
 \section{Slots}{
 
 \describe{
+\item{\code{fitType}}{A string indicating whether the fit was produced manually
+(\code{"manual"}) or by optimisation (\code{"auto"}).}
+
 \item{\code{model}}{A string indicating the model type (e.g. "d", "tal", "tau")}
 
 \item{\code{par}}{A named numeric vector of fitted parameters}
