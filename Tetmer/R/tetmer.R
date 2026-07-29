@@ -119,11 +119,11 @@ tetServer <- function(input, output, session, initialSpec) {
 
   output$outText <- shiny::renderUI({
     if (input$fitmod == "man") {
-      return(htmltools::tags$pre(textOut(input, 0, rv$spec)))
+      return(shiny::tags$pre(textOut(input, 0, rv$spec)))
     }
 
     if (is.null(rv$optimised)) {
-      return(htmltools::tags$pre(""))
+      return(shiny::tags$pre(""))
     }
 
     textOutHtml(input, rv$optimised, rv$spec)
@@ -1564,6 +1564,17 @@ textOutHtml <- function(input, optimised, spec){
   k    <- spec@k
   hasK <- k > 0
 
+  escapeHtml <- function(x) {
+    x <- as.character(x)
+    x[is.na(x)] <- ""
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;",  x, fixed = TRUE)
+    x <- gsub(">", "&gt;",  x, fixed = TRUE)
+    x <- gsub("\"", "&quot;", x, fixed = TRUE)
+    x <- gsub("'", "&#39;", x, fixed = TRUE)
+    x
+  }
+
   perNuc <- function(val) {
     if(hasK) paste0("\n theta per nucleotide: ", round(val / k, 5)) else ""
   }
@@ -1602,21 +1613,21 @@ textOutHtml <- function(input, optimised, spec){
 
   fmtBounded <- function(parName, display){
     st <- boundStatus(parName)
-    if(!isTRUE(st$on)) return(htmltools::htmlEscape(display))
+    if(!isTRUE(st$on)) return(escapeHtml(display))
 
-    htmltools::HTML(paste0(
+    paste0(
       "<span style=\"color:#b00020;font-weight:bold;\" title=\"at ", st$where, "\">",
-      htmltools::htmlEscape(display),
+      escapeHtml(display),
       "</span>"
-    ))
+    )
   }
 
   label  <- getModelLabel(input$mod)
   params <- getModelParameters(input, optimised = optimised)
 
   base <- paste0(
-    htmltools::htmlEscape(label), " MODEL, AUTO FITTED",
-    if(hasK) paste0("\n         k-mer length: ", htmltools::htmlEscape(as.character(k))) else "",
+    escapeHtml(label), " MODEL, AUTO FITTED",
+    if(hasK) paste0("\n         k-mer length: ", escapeHtml(as.character(k))) else "",
     "\n  monoploid k-mer cov: ", fmtBounded("cov", as.character(round(params$cov, 3))),
     "\n      theta per k-mer: ", fmtBounded("theta", as.character(round(params$theta, 4))),
     perNuc(params$theta),
@@ -1628,7 +1639,7 @@ textOutHtml <- function(input, optimised, spec){
     divergVal <- params$theta * params$diverg
     base <- paste0(base,
       "\n                    T: ", fmtBounded("diverg", as.character(round(params$diverg, 2))),
-      "\n     diverg per k-mer: ", htmltools::htmlEscape(as.character(round(divergVal, 4))),
+      "\n     diverg per k-mer: ", escapeHtml(as.character(round(divergVal, 4))),
       divergPerNuc(divergVal)
     )
   }
@@ -1640,27 +1651,27 @@ textOutHtml <- function(input, optimised, spec){
 
   ranges <- paste0(
     "\n\nSTARTING RANGES (MIN MAX)",
-    "\n  monoploid k-mer cov: ", htmltools::htmlEscape(as.character(input$akcov[1])), " ", htmltools::htmlEscape(as.character(input$akcov[2])),
-    "\nlog10 theta per k-mer: ", htmltools::htmlEscape(as.character(input$ath[1])), " ", htmltools::htmlEscape(as.character(input$ath[2])),
-    "\n     non-rep GS (Mbp): ", htmltools::htmlEscape(as.character(input$ayadj[1])), " ", htmltools::htmlEscape(as.character(input$ayadj[2])),
-    "\n variance factor (vf): ", htmltools::htmlEscape(as.character(input$avf[1])), " ", htmltools::htmlEscape(as.character(input$avf[2])),
-    "\n              x range: ", htmltools::htmlEscape(as.character(input$axrange[1])), " ", htmltools::htmlEscape(as.character(input$axrange[2]))
+    "\n  monoploid k-mer cov: ", escapeHtml(as.character(input$akcov[1])), " ", escapeHtml(as.character(input$akcov[2])),
+    "\nlog10 theta per k-mer: ", escapeHtml(as.character(input$ath[1])), " ", escapeHtml(as.character(input$ath[2])),
+    "\n     non-rep GS (Mbp): ", escapeHtml(as.character(input$ayadj[1])), " ", escapeHtml(as.character(input$ayadj[2])),
+    "\n variance factor (vf): ", escapeHtml(as.character(input$avf[1])), " ", escapeHtml(as.character(input$avf[2])),
+    "\n              x range: ", escapeHtml(as.character(input$axrange[1])), " ", escapeHtml(as.character(input$axrange[2]))
   )
 
   if(modelUsesDivergence(input$mod)){
     ranges <- paste0(ranges,
-      "\n                    T: ", htmltools::htmlEscape(as.character(input$adiv[1])), " ", htmltools::htmlEscape(as.character(input$adiv[2]))
+      "\n                    T: ", escapeHtml(as.character(input$adiv[1])), " ", escapeHtml(as.character(input$adiv[2]))
     )
   }
   if(modelUsesPallo(input$mod)){
     ranges <- paste0(ranges,
-      "\n       prop. allotet.: ", htmltools::htmlEscape(as.character(input$apallo[1])), " ", htmltools::htmlEscape(as.character(input$apallo[2]))
+      "\n       prop. allotet.: ", escapeHtml(as.character(input$apallo[1])), " ", escapeHtml(as.character(input$apallo[2]))
     )
   }
 
   note <- "\n\n(red = parameter at bound)"
 
-  htmltools::tags$pre(htmltools::HTML(paste0(base, ranges, note)))
+  shiny::tags$pre(shiny::HTML(paste0(base, ranges, note)))
 }
 
 
