@@ -51,10 +51,10 @@ mySpec@fits
 
 # Non-interactive ---------------------------------------------------------
 
-
-
-
 ?fitSpectrum
+
+
+?addFit
 mySpec@fits
 fit2 <- fitSpectrum(E028,
                     model  = "tal",

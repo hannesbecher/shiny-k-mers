@@ -1,3 +1,7 @@
+
+# Probability arrays ------------------------------------------------------
+# one row per peak
+
 probsDip <- expression(rbind(
   dnbinom(txmin:txmax,
     size = (tkcov * 1) / pmax(tvf - 1, .Machine$double.eps),
@@ -35,19 +39,28 @@ probsTet <- expression(rbind(
 ))
 
 
+# factors -----------------------------------------------------------------
 
+# factors of spectrum peak sizes for different ploidy scenarios,
+# based on the block-wise SFS approach
+
+# diploid
 factorDip <- expression(
   c(
     2*tth/(1+tth),
     1/(1+tth)
   )
 )
+
+# autotetraploid
 factorAut <- expression(
   c(4*tth/(3+tth),
     6*tth/(6+5*tth+tth^2),
     8*tth/(6+11*tth+6*tth^2+tth^3),
     6/(6+11*tth+6*tth^2+tth^3))
 )
+
+# allotetraplopid
 factorAll <- expression(
   c(
     4*exp(-3*tth*tdiverg)*tth*(
@@ -72,6 +85,7 @@ factorAll <- expression(
 
 )
 
+# segemental tetraploid, hidden by default
 factorTse <- expression(
   pal * c(
     4*exp(-3*tth*tdiverg)*tth*(
@@ -99,6 +113,7 @@ factorTse <- expression(
                   6/(6+11*tth+6*tth^2+tth^3))
 )
 
+# autotriploid
 factorTraaa <- expression(
   c(
     3*tth / (2 + tth),
@@ -107,6 +122,7 @@ factorTraaa <- expression(
   )
 )
 
+# allotriplod
 factorTraab <- expression(
   c(
     exp(-tdiverg*tth)*(-2-4*tth+exp(tdiverg*tth)*(2+7*tth+3*tth^2)) / (2+3*tth+tth^2),
