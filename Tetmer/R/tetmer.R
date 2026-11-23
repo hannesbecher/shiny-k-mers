@@ -1506,7 +1506,9 @@ makeFitRecord <- function(input, optimised = NULL, k){
 #'   with random restarts. Defaults to 5.
 #'
 #' @return A \code{tetmerFit} object, or \code{NULL} if all optimisation
-#'   attempts failed
+#'   attempts failed. Note, this is different from the behaviour of the Shiny
+#'   app, which always returns a \code{spectrum} object with the new
+#'   \code{tetmerFit} stored inside.
 #' @export
 #' @examples
 #' \dontrun{

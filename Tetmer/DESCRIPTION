@@ -1,7 +1,7 @@
 Package: Tetmer
 Type: Package
 Title: Fitting Population Parameters to k-mer Spectra
-Version: 2.3.2
+Version: 3.0.0
 Authors@R: c(
     person("Hannes", "Becher",
            email = "hannesbecher@gmail.com",
