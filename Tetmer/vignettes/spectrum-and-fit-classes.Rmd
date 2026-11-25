@@ -121,6 +121,14 @@ spec_with_fits <- addFit(spec_with_fit, fit_narrower)
 spec_with_fits
 ```
 
+Note that the interactive `tetmer()` app differs from `fitSpectrum()` in a
+important way: when you click **Done** in the app, it automatically
+appends the fitted result to the spectrum's `fits` slot and returns
+the updated `spectrum` object directly. In contrast, `fitSpectrum()`
+returns only the `tetmerFit` object, which can be manually
+attached using `addFit()` as shown above.
+
+
 ## Exporting with write.spectrum()
 
 `write.spectrum()` writes a `spectrum` object to a plain text file.

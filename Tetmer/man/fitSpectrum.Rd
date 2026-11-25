@@ -53,14 +53,22 @@ with random restarts. Defaults to 5.}
 }
 \value{
 A \code{tetmerFit} object, or \code{NULL} if all optimisation
-attempts failed. Note, this is different from the behaviour of the Shiny
-app, which always returns a \code{spectrum} object with the new
-\code{tetmerFit} stored inside.
+attempts failed. Note, this is different from the behaviour of the
+interactive \code{tetmer()} app, which always appends the
+\code{tetmerFit} to and returns a \code{spectrum} object.
 }
 \description{
 Runs Tetmer's optimisation machinery outside the Shiny app, allowing
 scripted and batch analyses. Takes a spectrum object and parameter
-bounds and returns a \code{tetmerFit} object directly.
+bounds and returns a \code{tetmerFit} object directly. Use \code{addFit()}
+to attach the returned fit to a spectrum before saving or visualizing.
+}
+\details{
+Unlike the interactive \code{tetmer()} app which automatically appends
+the fit to the input spectrum, \code{fitSpectrum()} returns only the
+\code{tetmerFit} object. After fitting, use \code{addFit()} to attach
+the fit to the original spectrum, then \code{write.spectrum()} to save
+or \code{plot()} to visualize the result.
 }
 \examples{
 \dontrun{
@@ -75,4 +83,8 @@ fit
 spec <- addFit(E030, fit)
 write.spectrum(spec, "E030_fitted.txt")
 }
+}
+\seealso{
+\code{\link{tetmer}}, \code{\link{addFit}},
+\code{\link{write.spectrum}}, \code{\link{read.spectrum}}
 }

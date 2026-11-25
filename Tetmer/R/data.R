@@ -14,7 +14,7 @@
 #'   }
 #'   }
 #' }
-#' @source Becher et al. (2020) \url{https://doi.org/10.1016/j.xplc.2020.100105}
+#' @source Becher et al. (2020) \doi{10.1016/j.xplc.2020.100105}
 #'
 #' @examples \dontrun{plot(E028, log="xy")}
 #' plot(E028, xlim=c(0, 200), ylim=c(0, 10000000))

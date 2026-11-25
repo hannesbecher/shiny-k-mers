@@ -17,7 +17,7 @@ A \code{spectrum} object containing a name and data frame:
 }
 }
 \source{
-Becher et al. (2020) \url{https://doi.org/10.1016/j.xplc.2020.100105}
+Becher et al. (2020) \doi{10.1016/j.xplc.2020.100105}
 }
 \usage{
 E028

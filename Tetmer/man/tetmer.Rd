@@ -16,9 +16,21 @@ slot. If the app is closed without pressing Done, the original input
 spectrum is returned unchanged.
 }
 \description{
-Run the interactive Tetmer app
+Launch an interactive Shiny application for fitting population genetic
+models to k-mer spectra. This function differs from \code{fitSpectrum()}
+in that it automatically appends the fitted result to the spectrum object.
+}
+\details{
+Unlike \code{fitSpectrum()}, which returns just the \code{tetmerFit}
+object directly and requires manual attachment to a spectrum via
+\code{addFit()}, \code{tetmer()} automatically appends the fit to the
+returned spectrum. This makes it convenient for interactive exploration.
 }
 \examples{
 \dontrun{result <- tetmer(E028)}
 \dontrun{result <- tetmer(E030)}
+}
+\seealso{
+\code{\link{fitSpectrum}}, \code{\link{addFit}},
+\code{\link{read.spectrum}}, \code{\link{write.spectrum}}
 }

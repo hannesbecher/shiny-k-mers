@@ -16,5 +16,20 @@ An updated \code{spectrum} object with the fit appended
 }
 \description{
 Appends a \code{tetmerFit} object to the \code{fits} slot of a
-\code{spectrum} object.
+\code{spectrum} object. This function is typically used to attach
+the fit object returned by \code{fitSpectrum()}, which does not
+automatically append fits like the interactive \code{tetmer()} app
+does. See 'Details' for how the two fitting approaches differ.
+}
+\details{
+The interactive \code{tetmer()} app automatically appends the fitted
+result to the input spectrum's \code{fits} slot when you press Done.
+In contrast, \code{fitSpectrum()} returns just the \code{tetmerFit}
+object directly. Use \code{addFit()} to manually attach the fit to
+a spectrum after calling \code{fitSpectrum()}, before saving with
+\code{write.spectrum()} or visualizing with \code{plot()}.
+}
+\seealso{
+\code{\link{fitSpectrum}}, \code{\link{tetmer}},
+\code{\link{write.spectrum}}
 }
